@@ -1,0 +1,813 @@
+<!doctype html>
+<html lang="nb">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="light dark">
+<title>Meland Bygg Kalkulator</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+/* Layout: one narrow column like a folding rule. Brand colours from the Meland Bygg logo sheet (orange 1665, grey 424/421, black). Ruler strip under the logo, tool tabs, inputs on top, results as a measured list below. */
+:root{
+  --bg:#F1F0EE;
+  --panel:#F8F8F7;
+  --field:#FFFFFF;
+  --ink:#121110;
+  --muted:#5C5F60;
+  --line:#CFCDCA;
+  --brand:#E14519;
+  --logo-gray:#6F7273;
+  --accent:#D13E0E;
+  --on-accent:#FFFFFF;
+  --hl:#E14519;
+  --warn:#6F5200;
+  --warn-bg:#FBF0C8;
+  --good:#1F6B43;
+  --good-bg:#DDF0E4;
+  --font-display:'Barlow Condensed','Arial Narrow',Arial,sans-serif;
+  --font-body:'IBM Plex Sans',system-ui,-apple-system,'Segoe UI',sans-serif;
+  --font-data:'IBM Plex Mono',ui-monospace,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#121110;
+    --panel:#1D1C1B;
+    --field:#0C0B0A;
+    --ink:#ECEBEA;
+    --muted:#A3A5A6;
+    --line:#353433;
+    --brand:#E14519;
+    --logo-gray:#BDBCBC;
+    --accent:#E14519;
+    --on-accent:#121110;
+    --hl:rgba(225,69,25,.5);
+    --warn:#F2CC5C;
+    --warn-bg:#332A0E;
+    --good:#7ED1A0;
+    --good-bg:#17301F;
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#121110;
+  --panel:#1D1C1B;
+  --field:#0C0B0A;
+  --ink:#ECEBEA;
+  --muted:#A3A5A6;
+  --line:#353433;
+  --brand:#E14519;
+  --logo-gray:#BDBCBC;
+  --accent:#E14519;
+  --on-accent:#121110;
+  --hl:rgba(225,69,25,.5);
+  --warn:#F2CC5C;
+  --warn-bg:#332A0E;
+  --good:#7ED1A0;
+  --good-bg:#17301F;
+  color-scheme:dark;
+}
+
+*,*::before,*::after{box-sizing:border-box}
+body{
+  background:var(--bg);
+  color:var(--ink);
+  font-family:var(--font-body);
+  font-size:16px;
+  line-height:1.5;
+  padding-block:20px 40px;
+  padding-left:max(16px, env(safe-area-inset-left, 0px));
+  padding-right:max(16px, env(safe-area-inset-right, 0px));
+}
+.wrap{max-width:640px;margin:0 auto}
+
+/* Header */
+.top{display:flex;align-items:baseline;justify-content:space-between;gap:12px;flex-wrap:wrap;padding-bottom:10px}
+.brand{display:block;line-height:0}
+.logo{height:46px;width:auto;max-width:100%;display:block}
+.lg-o{fill:var(--brand)}
+.lg-g{fill:var(--logo-gray)}
+.tool-name{margin:0;font-size:13px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.ruler{
+  height:16px;
+  border-bottom:2px solid var(--ink);
+  background:
+    repeating-linear-gradient(90deg,var(--ink) 0 1px,transparent 1px 40px) left bottom/100% 16px no-repeat,
+    repeating-linear-gradient(90deg,var(--ink) 0 1px,transparent 1px 8px) left bottom/100% 8px no-repeat;
+}
+
+/* Tabs */
+.tabs{display:flex;gap:8px;overflow-x:auto;padding-block:16px;scrollbar-width:none}
+.tabs::-webkit-scrollbar{display:none}
+.tab{
+  flex:0 0 auto;
+  padding:9px 14px;
+  border:1.5px solid var(--ink);
+  border-radius:4px;
+  color:var(--ink);
+  text-decoration:none;
+  font-weight:600;
+  font-size:15px;
+  line-height:1.2;
+  background:var(--panel);
+}
+.tab[aria-current="page"]{background:var(--accent);border-color:var(--accent);color:var(--on-accent)}
+.tab:focus-visible,.chip:focus-visible,.seg button:focus-visible,.btn:focus-visible{outline:3px solid var(--ink);outline-offset:2px}
+
+/* Panels */
+.tool h2{
+  margin:4px 0 4px;
+  font-family:var(--font-display);
+  font-weight:600;
+  font-size:34px;
+  line-height:1.05;
+  text-wrap:balance;
+}
+.intro{margin:0 0 18px;color:var(--muted);max-width:60ch}
+
+.seg{display:inline-flex;border:1.5px solid var(--ink);border-radius:4px;overflow:hidden;margin-bottom:16px}
+.seg button{
+  appearance:none;border:0;background:var(--panel);color:var(--ink);
+  font:600 14px/1.2 var(--font-body);padding:9px 14px;cursor:pointer;
+}
+.seg button+button{border-left:1.5px solid var(--ink)}
+.seg button[aria-pressed="true"]{background:var(--ink);color:var(--bg)}
+
+.fields{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:14px 12px}
+.field{min-width:0}
+.field label{display:block;margin-bottom:5px;font-size:12px;font-weight:600;letter-spacing:.07em;text-transform:uppercase;color:var(--muted)}
+.box{display:flex;align-items:stretch;border:1.5px solid var(--line);border-radius:4px;background:var(--field)}
+.box:focus-within{border-color:var(--ink);box-shadow:0 0 0 3px var(--accent)}
+.box input{
+  flex:1;min-width:0;border:0;background:transparent;color:var(--ink);
+  font:500 20px/1.2 var(--font-data);padding:11px 10px;outline:0;
+}
+.suffix{display:flex;align-items:center;padding:0 12px;border-left:1.5px solid var(--line);color:var(--muted);font:500 14px var(--font-data);background:var(--panel)}
+.help{margin:5px 0 0;font-size:12px;color:var(--muted)}
+
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px;align-items:center}
+.chips .lbl{font-size:12px;font-weight:600;letter-spacing:.07em;text-transform:uppercase;color:var(--muted);margin-right:2px}
+.chip{
+  appearance:none;border:1.5px solid var(--line);background:var(--panel);color:var(--ink);
+  font:500 14px var(--font-data);padding:6px 11px;border-radius:4px;cursor:pointer;
+}
+.chip:hover{border-color:var(--ink)}
+
+/* Results */
+.results{margin-top:22px;border-top:2px solid var(--ink)}
+.results dl{margin:0}
+.row{display:flex;justify-content:space-between;align-items:baseline;gap:16px;padding:11px 0;border-bottom:1px solid var(--line)}
+.row dt{margin:0;color:var(--muted);font-size:14px;min-width:0}
+.row dd{margin:0;text-align:right;min-width:0}
+.val{font-family:var(--font-data);font-weight:500;font-size:20px;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+.unit{font-family:var(--font-data);font-size:14px;color:var(--muted);margin-left:5px}
+.sub{display:block;font-size:12px;color:var(--muted);font-family:var(--font-data)}
+.row.primary{padding:16px 0 14px}
+.row.primary dt{color:var(--ink);font-weight:600;font-size:15px}
+.row.primary .val{
+  font-family:var(--font-display);font-weight:600;font-size:52px;line-height:1;
+  background:linear-gradient(transparent 66%, var(--hl) 66% 90%, transparent 90%);
+  padding:0 4px;
+}
+.row.primary .unit{font-family:var(--font-display);font-size:24px;color:var(--ink)}
+.note{margin:14px 0 0;padding:10px 12px;border-radius:4px;font-size:14px;background:var(--panel);color:var(--ink)}
+.note.warn{background:var(--warn-bg);color:var(--warn)}
+.note.ok{background:var(--good-bg);color:var(--good)}
+.empty{margin:14px 0 0;color:var(--muted);font-size:14px}
+
+.figure{margin:20px 0 0;padding:10px;border:1px solid var(--line);border-radius:4px;background:var(--panel)}
+.figure svg{display:block;width:100%;height:auto;max-height:230px}
+.figure figcaption{margin-top:6px;font-size:12px;color:var(--muted)}
+.shape{fill:var(--field);stroke:var(--ink);stroke-width:2;stroke-linejoin:round}
+.stud{stroke:var(--ink);stroke-width:1.5}
+.dim{stroke:var(--muted);stroke-width:1.5;stroke-dasharray:5 4}
+.ground{stroke:var(--ink);stroke-width:2}
+.t{fill:var(--ink);font:500 12px var(--font-data)}
+
+.sect{margin:22px 0 8px;font-size:12px;font-weight:600;letter-spacing:.07em;text-transform:uppercase;color:var(--muted)}
+.table-wrap{overflow-x:auto;border-top:2px solid var(--ink)}
+table{width:100%;border-collapse:collapse;font-family:var(--font-data);font-variant-numeric:tabular-nums}
+th,td{padding:8px 6px;text-align:right;border-bottom:1px solid var(--line);font-size:15px}
+th{font:600 11px var(--font-body);letter-spacing:.07em;text-transform:uppercase;color:var(--muted)}
+th:first-child,td:first-child{text-align:left}
+tr.peak td{font-weight:500;background:linear-gradient(transparent 20%, var(--hl) 20% 80%, transparent 80%)}
+.cutlist{margin:0;padding:0;list-style:none;display:flex;flex-wrap:wrap;gap:8px}
+.cutlist li{padding:7px 11px;border:1.5px solid var(--line);border-radius:4px;background:var(--panel);font:500 15px var(--font-data)}
+.alts{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
+.alt{appearance:none;text-align:left;border:1.5px solid var(--line);background:var(--panel);color:var(--ink);border-radius:4px;padding:12px;cursor:pointer;font:inherit}
+.alt:hover{border-color:var(--ink)}
+.alt:focus-visible{outline:3px solid var(--ink);outline-offset:2px}
+.alt[aria-current="true"]{border-color:var(--accent);box-shadow:0 0 0 2px var(--accent)}
+.alt .n{display:block;font-family:var(--font-display);font-weight:600;font-size:26px;line-height:1;margin-bottom:8px}
+.alt .l{display:block;font:500 14px var(--font-data);font-variant-numeric:tabular-nums}
+.alt .tag{display:block;margin-top:8px;font-size:13px;color:var(--muted)}
+.btn{
+  appearance:none;margin-top:14px;border:1.5px solid var(--ink);background:var(--panel);color:var(--ink);
+  font:600 14px var(--font-body);padding:9px 14px;border-radius:4px;cursor:pointer;
+}
+.btn:hover{background:var(--accent);border-color:var(--accent);color:var(--on-accent)}
+.foot{margin-top:36px;padding-top:12px;border-top:1px solid var(--line);font-size:12px;color:var(--muted)}
+@media (prefers-reduced-motion:reduce){*{scroll-behavior:auto!important;transition:none!important}}
+[hidden]{display:none!important}
+body{margin:0}
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <header class="top">
+    <div class="brand"><svg class="logo" viewBox="222.8 132.4 414.3 121.9" role="img" aria-label="Meland Bygg"><path class="lg-g" d="M 393.441406 252.644531 L 388.542969 252.644531 L 388.542969 133.414062 L 393.441406 133.414062 Z M 393.441406 252.644531"/><path class="lg-g" d="M 449.675781 133.902344 L 444.605469 133.902344 L 444.367188 134.238281 L 431.863281 151.925781 L 419.363281 134.238281 L 419.125 133.902344 L 413.207031 133.902344 L 413.207031 172.089844 L 419.503906 172.089844 L 419.503906 150.671875 C 419.503906 148.953125 419.488281 147.148438 419.453125 145.195312 C 420.621094 146.921875 421.816406 148.664062 423.023438 150.363281 L 431.109375 161.792969 L 431.761719 162.710938 L 432.414062 161.792969 L 440.5 150.363281 C 441.707031 148.664062 442.898438 146.921875 444.070312 145.195312 C 444.035156 147.148438 444.019531 148.953125 444.019531 150.671875 L 444.019531 172.089844 L 450.472656 172.089844 L 450.472656 133.902344 Z M 449.675781 133.902344"/><path class="lg-g" d="M 461.027344 134.578125 L 485.277344 134.578125 L 485.277344 140.871094 L 468.234375 140.871094 L 468.234375 150.019531 L 480.246094 150.019531 L 480.246094 156.140625 L 468.234375 156.140625 L 468.234375 165.464844 L 485.277344 165.464844 L 485.277344 171.753906 L 461.027344 171.753906 Z M 461.027344 134.578125"/><path class="lg-g" d="M 495.289062 134.578125 L 502.496094 134.578125 L 502.496094 165.234375 L 519.882812 165.234375 L 519.882812 171.753906 L 495.289062 171.753906 Z M 495.289062 134.578125"/><path class="lg-g" d="M 538.648438 158.257812 L 547.972656 158.257812 L 543.679688 140.871094 L 542.9375 140.871094 Z M 549.515625 164.320312 L 537.101562 164.320312 L 535.214844 171.757812 L 527.835938 171.757812 L 537.675781 134.578125 L 549 134.578125 L 558.722656 171.757812 L 551.347656 171.757812 Z M 549.515625 164.320312"/><path class="lg-g" d="M 588.125 171.757812 L 579.488281 154.9375 C 578.402344 152.710938 576.570312 148.535156 574.339844 143.269531 L 574.453125 154.597656 L 574.453125 171.757812 L 567.992188 171.757812 L 567.992188 134.578125 L 576.972656 134.578125 L 585.953125 152.308594 L 591.441406 164.664062 C 591.328125 159.972656 591.210938 155.910156 591.210938 152.882812 L 591.210938 134.578125 L 597.675781 134.578125 L 597.675781 171.757812 Z M 588.125 171.757812"/><path class="lg-g" d="M 629.023438 141.097656 L 615.867188 141.097656 L 615.867188 165.234375 L 629.023438 165.234375 Z M 608.660156 134.578125 L 630.738281 134.578125 C 634.96875 134.578125 636.113281 137.265625 636.113281 141.726562 L 636.113281 165.066406 C 636.113281 168.4375 634.113281 171.757812 629.707031 171.757812 L 608.660156 171.757812 Z M 608.660156 134.578125"/><path class="lg-g" d="M 447.667969 226.621094 L 425.398438 226.621094 L 425.398438 242.910156 L 447.667969 242.910156 Z M 446.578125 201.078125 L 425.398438 201.078125 L 425.398438 216.886719 L 446.578125 216.886719 Z M 412.925781 190.671875 L 449.152344 190.671875 C 456.28125 190.671875 458.851562 194.332031 458.851562 201.273438 L 458.851562 214.382812 C 458.851562 217.5625 457.863281 219.972656 455.882812 221.320312 C 458.851562 222.574219 460.140625 225.175781 460.140625 229.417969 L 460.140625 243.007812 C 460.140625 248.308594 456.773438 253.320312 449.152344 253.320312 L 412.925781 253.320312 Z M 412.925781 190.671875"/><path class="lg-g" d="M 486.964844 253.320312 L 486.964844 228.550781 L 467.265625 190.667969 L 480.429688 190.667969 L 493.199219 217.175781 L 493.398438 217.175781 L 506.265625 190.667969 L 519.429688 190.667969 L 499.335938 228.453125 L 499.335938 253.320312 Z M 486.964844 253.320312"/><path class="lg-g" d="M 562.285156 209.082031 L 562.285156 201.5625 L 539.125 201.5625 L 539.125 242.429688 L 562.386719 242.429688 L 562.386719 227.683594 L 550.011719 227.683594 L 550.011719 218.042969 L 574.558594 218.042969 L 574.558594 242.238281 C 574.558594 248.214844 571.691406 253.320312 563.574219 253.320312 L 538.234375 253.320312 C 531.207031 253.320312 526.851562 249.660156 526.851562 242.140625 L 526.851562 201.078125 C 526.851562 193.367188 530.910156 190.671875 537.246094 190.671875 L 564.265625 190.671875 C 571.886719 190.671875 574.558594 194.238281 574.558594 201.753906 L 574.558594 209.082031 Z M 562.285156 209.082031"/><path class="lg-g" d="M 623.355469 209.082031 L 623.355469 201.5625 L 600.195312 201.5625 L 600.195312 242.429688 L 623.453125 242.429688 L 623.453125 227.683594 L 611.082031 227.683594 L 611.082031 218.042969 L 635.628906 218.042969 L 635.628906 242.238281 C 635.628906 248.214844 632.757812 253.320312 624.640625 253.320312 L 599.304688 253.320312 C 592.277344 253.320312 587.921875 249.660156 587.921875 242.140625 L 587.921875 201.078125 C 587.921875 193.367188 591.980469 190.671875 598.3125 190.671875 L 625.335938 190.671875 C 632.957031 190.671875 635.628906 194.238281 635.628906 201.753906 L 635.628906 209.082031 Z M 623.355469 209.082031"/><path class="lg-o" d="M 253.296875 251.792969 L 231.660156 251.792969 C 227.339844 251.792969 223.832031 248.324219 223.832031 244.046875 L 224.097656 133.972656 L 253.222656 133.972656 L 295.128906 175.699219 C 295.15625 175.734375 337.042969 134.015625 337.042969 134.015625 L 366.542969 133.972656 L 366.328125 244.046875 C 366.328125 248.324219 362.824219 251.792969 358.5 251.792969 L 336.863281 251.792969 C 336.824219 251.792969 336.789062 251.761719 336.789062 251.71875 L 337.042969 184.515625 C 337.042969 184.441406 337.085938 175.097656 337.042969 175.152344 L 300.683594 211.582031 C 297.648438 214.8125 292.480469 214.820312 289.4375 211.59375 L 253.222656 175.152344 C 253.179688 175.09375 253.210938 183.335938 253.210938 183.410156 L 253.371094 251.71875 C 253.371094 251.761719 253.339844 251.792969 253.296875 251.792969"/></svg></div>
+    <p class="tool-name">Byggekalkulator</p>
+  </header>
+  <div class="ruler" aria-hidden="true"></div>
+
+  <nav class="tabs" aria-label="Verktøy">
+    <a class="tab" href="#rektangel" data-tab="rektangel">Flate og volum</a>
+    <a class="tab" href="#tak" data-tab="tak">Takvinkel</a>
+    <a class="tab" href="#gavl" data-tab="gavl">Gavlstendere</a>
+    <a class="tab" href="#trapp" data-tab="trapp">Trapp</a>
+    <a class="tab" href="#vinkel" data-tab="vinkel">Vinkel</a>
+  </nav>
+
+  <!-- RECTANGLE -->
+  <section class="tool" id="panel-rektangel" data-tool="rektangel" hidden>
+    <h2>Flate og volum</h2>
+    <p class="intro">Legg inn lengde og bredde. Diagonalen brukes til å kontrollere at hjørnene er rette.</p>
+    <div class="fields">
+      <div class="field"><label for="r-l">Lengde</label><div class="box"><input id="r-l" type="text" inputmode="decimal" autocomplete="off" value="8,0"><span class="suffix">m</span></div></div>
+      <div class="field"><label for="r-b">Bredde</label><div class="box"><input id="r-b" type="text" inputmode="decimal" autocomplete="off" value="6,0"><span class="suffix">m</span></div></div>
+      <div class="field"><label for="r-h">Høyde (valgfri)</label><div class="box"><input id="r-h" type="text" inputmode="decimal" autocomplete="off" value="2,5"><span class="suffix">m</span></div></div>
+    </div>
+    <div class="results" id="r-out" aria-live="polite"></div>
+  </section>
+
+  <!-- ROOF -->
+  <section class="tool" id="panel-tak" data-tool="tak" data-mode="A" hidden>
+    <h2>Takvinkel og taklengde</h2>
+    <p class="intro">Symmetrisk saltak. Mål høyde til underkant takstol og til møne, eller legg inn vinkelen du har.</p>
+    <div class="seg" role="group" aria-label="Regn ut fra">
+      <button type="button" data-mode="A" aria-pressed="true">Fra høyder</button>
+      <button type="button" data-mode="B" aria-pressed="false">Fra vinkel</button>
+    </div>
+    <div class="fields">
+      <div class="field"><label for="t-b">Husbredde</label><div class="box"><input id="t-b" type="text" inputmode="decimal" autocomplete="off" value="6,0"><span class="suffix">m</span></div></div>
+      <div class="field" data-show="A"><label for="t-wall">Høyde til takstol</label><div class="box"><input id="t-wall" type="text" inputmode="decimal" autocomplete="off" value="2,5"><span class="suffix">m</span></div></div>
+      <div class="field" data-show="A"><label for="t-ridge">Høyde til møne</label><div class="box"><input id="t-ridge" type="text" inputmode="decimal" autocomplete="off" value="4,5"><span class="suffix">m</span></div></div>
+      <div class="field" data-show="B" hidden><label for="t-angle">Takvinkel</label><div class="box"><input id="t-angle" type="text" inputmode="decimal" autocomplete="off" value="30"><span class="suffix">°</span></div></div>
+      <div class="field"><label for="t-oh">Raftoverheng (valgfri)</label><div class="box"><input id="t-oh" type="text" inputmode="decimal" autocomplete="off" value="0"><span class="suffix">mm</span></div><p class="help">Målt vannrett fra vegg.</p></div>
+    </div>
+    <div class="results" id="t-out" aria-live="polite"></div>
+    <figure class="figure" id="t-fig" hidden><div id="t-svg"></div><figcaption>Snitt gjennom huset. Stiplet linje viser stigningen fra underkant takstol til møne.</figcaption></figure>
+  </section>
+
+  <!-- GABLE STUDS -->
+  <section class="tool" id="panel-gavl" data-tool="gavl" hidden>
+    <h2>Gavlstendere</h2>
+    <p class="intro">Lengde på hver stender i en gavlvegg. Første stender står i venstre hjørne, resten på valgt c/c.</p>
+    <div class="fields">
+      <div class="field"><label for="g-b">Gavlbredde</label><div class="box"><input id="g-b" type="text" inputmode="decimal" autocomplete="off" value="6,0"><span class="suffix">m</span></div></div>
+      <div class="field"><label for="g-a">Takvinkel</label><div class="box"><input id="g-a" type="text" inputmode="decimal" autocomplete="off" value="27"><span class="suffix">°</span></div></div>
+      <div class="field"><label for="g-cc">c/c</label><div class="box"><input id="g-cc" type="text" inputmode="decimal" autocomplete="off" value="600"><span class="suffix">mm</span></div></div>
+      <div class="field"><label for="g-h">Høyde ved gesims</label><div class="box"><input id="g-h" type="text" inputmode="decimal" autocomplete="off" value="2500"><span class="suffix">mm</span></div><p class="help">Kortest stender, ytterst på veggen.</p></div>
+      <div class="field"><label for="g-cut">Fradrag svill og rem</label><div class="box"><input id="g-cut" type="text" inputmode="decimal" autocomplete="off" value="0"><span class="suffix">mm</span></div><p class="help">Trekkes fra hver stender.</p></div>
+    </div>
+    <div class="chips"><span class="lbl">c/c</span>
+      <button type="button" class="chip" data-set="g-cc" data-value="300">300</button>
+      <button type="button" class="chip" data-set="g-cc" data-value="450">450</button>
+      <button type="button" class="chip" data-set="g-cc" data-value="600">600</button>
+    </div>
+    <div class="results" id="g-out" aria-live="polite"></div>
+    <div id="g-more" hidden>
+      <figure class="figure"><div id="g-svg"></div><figcaption>Gavlen sett utenfra, tegnet i målestokk.</figcaption></figure>
+      <h3 class="sect">Kappliste</h3>
+      <ul class="cutlist" id="g-list"></ul>
+      <h3 class="sect">Alle stendere fra venstre</h3>
+      <div class="table-wrap"><table>
+        <thead><tr><th>Nr</th><th>Fra hjørne</th><th>Lengde</th></tr></thead>
+        <tbody id="g-rows"></tbody>
+      </table></div>
+      <button type="button" class="btn" id="g-copy">Kopier kappliste</button>
+    </div>
+  </section>
+
+  <!-- STAIRS -->
+  <section class="tool" id="panel-trapp" data-tool="trapp" data-mode="A" hidden>
+    <h2>Trapp</h2>
+    <p class="intro">Trappeformelen: 2 × opptrinn + inntrinn. Standard er 630 mm.</p>
+    <div class="seg" role="group" aria-label="Regn ut fra">
+      <button type="button" data-mode="A" aria-pressed="true">Fra høyde</button>
+      <button type="button" data-mode="B" aria-pressed="false">Fra plass</button>
+    </div>
+    <div class="fields">
+      <div class="field"><label for="s-h">Høyde gulv til gulv</label><div class="box"><input id="s-h" type="text" inputmode="decimal" autocomplete="off" value="2600"><span class="suffix">mm</span></div></div>
+      <div class="field" data-show="A"><label for="s-rise">Ønsket opptrinn</label><div class="box"><input id="s-rise" type="text" inputmode="decimal" autocomplete="off" value="175"><span class="suffix">mm</span></div></div>
+      <div class="field" data-show="B" hidden><label for="s-run">Plass i løpet</label><div class="box"><input id="s-run" type="text" inputmode="decimal" autocomplete="off" value="3500"><span class="suffix">mm</span></div><p class="help">Vannrett lengde trappen kan ta.</p></div>
+      <div class="field"><label for="s-f">Trappeformel</label><div class="box"><input id="s-f" type="text" inputmode="decimal" autocomplete="off" value="630"><span class="suffix">mm</span></div></div>
+    </div>
+    <div class="results" id="s-out" aria-live="polite"></div>
+    <div id="s-alt" hidden>
+      <h3 class="sect">Sammenlign antall trinn</h3>
+      <div class="alts" id="s-alts"></div>
+    </div>
+    <button type="button" class="btn" id="s-copy" hidden>Kopier tallene</button>
+  </section>
+
+  <!-- ANGLE -->
+  <section class="tool" id="panel-vinkel" data-tool="vinkel" hidden>
+    <h2>Vinkel og stigning</h2>
+    <p class="intro">Skriv i ett felt, så fyller de andre seg ut.</p>
+    <div class="fields">
+      <div class="field"><label for="v-deg">Grader</label><div class="box"><input id="v-deg" type="text" inputmode="decimal" autocomplete="off" value="30"><span class="suffix">°</span></div></div>
+      <div class="field"><label for="v-pct">Prosent</label><div class="box"><input id="v-pct" type="text" inputmode="decimal" autocomplete="off"><span class="suffix">%</span></div></div>
+      <div class="field"><label for="v-ratio">Forhold 1 : x</label><div class="box"><input id="v-ratio" type="text" inputmode="decimal" autocomplete="off"><span class="suffix">1 :</span></div></div>
+      <div class="field"><label for="v-mm">Stigning per meter</label><div class="box"><input id="v-mm" type="text" inputmode="decimal" autocomplete="off"><span class="suffix">mm</span></div></div>
+    </div>
+    <div class="chips"><span class="lbl">Vanlige takvinkler</span>
+      <button type="button" class="chip" data-set="v-deg" data-value="22">22°</button>
+      <button type="button" class="chip" data-set="v-deg" data-value="27">27°</button>
+      <button type="button" class="chip" data-set="v-deg" data-value="30">30°</button>
+      <button type="button" class="chip" data-set="v-deg" data-value="35">35°</button>
+      <button type="button" class="chip" data-set="v-deg" data-value="40">40°</button>
+      <button type="button" class="chip" data-set="v-deg" data-value="45">45°</button>
+    </div>
+    <p class="note" style="margin-top:18px">Forhold 1 : x betyr x meter vannrett for hver meter opp. Stigning per meter er hvor mange mm taket stiger per meter vannrett.</p>
+  </section>
+
+  <p class="foot">Tallene som står i feltene er eksempler. Bytt dem med egne mål. Kontrollmål alltid på byggeplassen.</p>
+</div>
+
+<script>
+(function(){
+'use strict';
+
+// CALC-START
+const rad = d => d * Math.PI / 180;
+const deg = r => r * 180 / Math.PI;
+
+function calcRect(L, B, H){
+  return { diag: Math.hypot(L, B), omkrets: 2 * (L + B), areal: L * B, volum: H == null ? null : L * B * H };
+}
+
+function calcRoofHeights(B, wall, ridge, ohMm){
+  const rise = ridge - wall, half = B / 2;
+  if (!(B > 0) || !(wall >= 0) || !(rise > 0)) return null;
+  const a = Math.atan2(rise, half);
+  const len = Math.hypot(half, rise);
+  return { angle: deg(a), len, rise, percent: 100 * rise / half, lenOh: len + (ohMm || 0) / 1000 / Math.cos(a) };
+}
+
+function calcRoofAngle(B, angleDeg, ohMm){
+  if (!(B > 0) || !(angleDeg > 0) || !(angleDeg < 85)) return null;
+  const a = rad(angleDeg), half = B / 2;
+  const len = half / Math.cos(a);
+  return { angle: angleDeg, len, rise: half * Math.tan(a), percent: 100 * Math.tan(a), lenOh: len + (ohMm || 0) / 1000 / Math.cos(a) };
+}
+
+function calcGable(Bm, angleDeg, cc, base, cut){
+  if (!(Bm > 0) || !(angleDeg > 0) || !(angleDeg < 85) || !(cc >= 100) || !(base >= 0)) return null;
+  const Bmm = Bm * 1000, t = Math.tan(rad(angleDeg));
+  const xs = [];
+  for (let i = 0; i * cc < Bmm - 0.5 && i < 400; i++) xs.push(i * cc);
+  xs.push(Bmm);
+  const rows = xs.map((x, i) => {
+    const roofH = base + Math.min(x, Bmm - x) * t;
+    return { nr: i + 1, x, roofH, len: roofH - cut };
+  });
+  const groups = new Map();
+  rows.forEach(r => { const k = Math.round(r.len); groups.set(k, (groups.get(k) || 0) + 1); });
+  const list = [...groups.entries()].sort((a, b) => a[0] - b[0]).map(([len, count]) => ({ len, count }));
+  const lens = rows.map(r => r.len);
+  return { step: cc * t, rows, list, count: rows.length, min: Math.min(...lens), max: Math.max(...lens), peakH: base + (Bmm / 2) * t, ridgeStud: Math.abs(Bmm / 2 / cc - Math.round(Bmm / 2 / cc)) < 1e-9 };
+}
+
+function stairFrom(H, n, f, runGiven){
+  const rise = H / n;
+  const tread = runGiven != null ? runGiven / (n - 1) : f - 2 * rise;
+  if (!(tread > 0)) return { bad: true, n, rise, tread };
+  return {
+    n, rise, tread, treads: n - 1, run: (n - 1) * tread,
+    angle: deg(Math.atan2(rise, tread)),
+    pitch: (n - 1) * Math.hypot(rise, tread),
+    sum: 2 * rise + tread
+  };
+}
+
+function calcStairFromHeight(H, wantRise, f){
+  if (!(H > 0) || !(wantRise > 0) || !(f > 0)) return null;
+  const n = Math.max(2, Math.round(H / wantRise));
+  return stairFrom(H, n, f, null);
+}
+
+function calcStairFromRun(H, L, f){
+  if (!(H > 0) || !(L > 0) || !(f > 0)) return null;
+  let best = null, bestAny = null;
+  for (let n = 3; n <= 40; n++) {
+    const rise = H / n, tread = L / (n - 1);
+    const dev = Math.abs(2 * rise + tread - f);
+    if (!bestAny || dev < bestAny.dev) bestAny = { n, dev };
+    if (rise >= 120 && rise <= 220 && (!best || dev < best.dev)) best = { n, dev };
+  }
+  const pick = best || bestAny;
+  return stairFrom(H, pick.n, f, L);
+}
+
+function anglesFrom(kind, v){
+  let a;
+  if (kind === 'deg') a = v;
+  else if (kind === 'pct') a = deg(Math.atan(v / 100));
+  else if (kind === 'ratio') a = deg(Math.atan(1 / v));
+  else a = deg(Math.atan(v / 1000));
+  if (!isFinite(a) || a <= 0 || a >= 90) return null;
+  const t = Math.tan(rad(a));
+  return { deg: a, pct: 100 * t, ratio: 1 / t, mm: 1000 * t };
+}
+// CALC-END
+
+/* ---------- UI helpers ---------- */
+const $ = id => document.getElementById(id);
+const nf = (a, b) => new Intl.NumberFormat('nb-NO', { minimumFractionDigits: a, maximumFractionDigits: b });
+const F0 = nf(0, 0), F1 = nf(1, 1), F2 = nf(2, 2), F3 = nf(3, 3);
+
+function num(id){
+  const el = $(id);
+  if (!el) return null;
+  const s = el.value.trim().replace(/\s/g, '').replace(',', '.');
+  if (s === '') return null;
+  const n = Number(s);
+  return isFinite(n) ? n : null;
+}
+function plain(n, d){
+  let s = n.toFixed(d);
+  if (s.includes('.')) s = s.replace(/0+$/, '').replace(/\.$/, '');
+  return s.replace('.', ',');
+}
+
+function setOut(id, rows, notes, emptyMsg){
+  const host = $(id);
+  host.replaceChildren();
+  if (emptyMsg){
+    const p = document.createElement('p');
+    p.className = 'empty';
+    p.textContent = emptyMsg;
+    host.append(p);
+    return;
+  }
+  const dl = document.createElement('dl');
+  rows.forEach(r => {
+    const row = document.createElement('div');
+    row.className = 'row' + (r.primary ? ' primary' : '');
+    const dt = document.createElement('dt');
+    dt.textContent = r.label;
+    const dd = document.createElement('dd');
+    const v = document.createElement('span');
+    v.className = 'val';
+    v.textContent = r.value;
+    dd.append(v);
+    if (r.unit){
+      const u = document.createElement('span');
+      u.className = 'unit';
+      u.textContent = r.unit;
+      dd.append(u);
+    }
+    if (r.sub){
+      const s = document.createElement('span');
+      s.className = 'sub';
+      s.textContent = r.sub;
+      dd.append(s);
+    }
+    row.append(dt, dd);
+    dl.append(row);
+  });
+  host.append(dl);
+  (notes || []).forEach(n => {
+    const p = document.createElement('p');
+    p.className = 'note ' + n.kind;
+    p.textContent = n.text;
+    host.append(p);
+  });
+}
+
+/* ---------- Rectangle ---------- */
+function updateRect(){
+  const L = num('r-l'), B = num('r-b'), H = num('r-h');
+  if (!(L > 0 && B > 0)) return setOut('r-out', null, null, 'Fyll inn lengde og bredde.');
+  const r = calcRect(L, B, H > 0 ? H : null);
+  setOut('r-out', [
+    { label: 'Diagonal', value: F3.format(r.diag), unit: 'm', sub: F0.format(r.diag * 1000) + ' mm', primary: true },
+    { label: 'Omkrets', value: F2.format(r.omkrets), unit: 'm' },
+    { label: 'Areal', value: F2.format(r.areal), unit: 'm²' },
+    r.volum == null
+      ? { label: 'Volum', value: '–', sub: 'Legg inn høyde for m³' }
+      : { label: 'Volum', value: F2.format(r.volum), unit: 'm³' }
+  ], [{ kind: 'info', text: 'Mål begge diagonalene på byggeplassen. Er de like lange, er hjørnene rette.' }]);
+}
+
+/* ---------- Roof ---------- */
+function roofSvg(B, wall, rise, angle){
+  const W = 320, Hh = 176, base = 148, maxW = 230, maxH = 112;
+  const total = (wall || 0) + rise;
+  const s = Math.min(maxW / B, maxH / total);
+  const w = B * s, ox = (W - w) / 2, cx = W / 2;
+  const eaveY = base - (wall || 0) * s, ridgeY = base - total * s;
+  const pts = wall
+    ? `${ox},${base} ${ox},${eaveY} ${cx},${ridgeY} ${ox + w},${eaveY} ${ox + w},${base}`
+    : `${ox},${base} ${cx},${ridgeY} ${ox + w},${base}`;
+  return `<svg viewBox="0 0 ${W} ${Hh}" role="img" aria-label="Snitt av saltak">
+    <line class="ground" x1="10" y1="${base}" x2="${W - 10}" y2="${base}"/>
+    <polygon class="shape" points="${pts}"/>
+    ${wall ? `<line class="dim" x1="${ox}" y1="${eaveY}" x2="${ox + w}" y2="${eaveY}"/>` : ''}
+    <line class="dim" x1="${cx}" y1="${eaveY}" x2="${cx}" y2="${ridgeY}"/>
+    <text class="t" x="${cx}" y="${ridgeY - 8}" text-anchor="middle">Stigning ${F2.format(rise)} m</text>
+    <text class="t" x="${cx}" y="${base + 18}" text-anchor="middle">Bredde ${F2.format(B)} m</text>
+    <text class="t" x="${ox - 6}" y="${eaveY - 4}" text-anchor="end">${F1.format(angle)}°</text>
+  </svg>`;
+}
+
+function updateRoof(){
+  const mode = $('panel-tak').dataset.mode;
+  const B = num('t-b'), oh = num('t-oh') || 0;
+  const fig = $('t-fig');
+  let r = null, wall = null, msg = 'Fyll inn husbredde, høyde til takstol og høyde til møne.';
+  if (mode === 'A'){
+    wall = num('t-wall');
+    const ridge = num('t-ridge');
+    if (B > 0 && wall != null && ridge != null){
+      r = calcRoofHeights(B, wall, ridge, oh);
+      if (!r) msg = 'Høyde til møne må være større enn høyde til takstol.';
+    }
+  } else {
+    msg = 'Fyll inn husbredde og takvinkel (mellom 0 og 85 grader).';
+    const a = num('t-angle');
+    if (B > 0 && a != null) r = calcRoofAngle(B, a, oh);
+  }
+  if (!r){ fig.hidden = true; return setOut('t-out', null, null, msg); }
+  const rows = mode === 'A'
+    ? [
+        { label: 'Takvinkel', value: F1.format(r.angle), unit: '°', primary: true },
+        { label: 'Taksidelengde (skrå)', value: F3.format(r.len), unit: 'm', sub: F0.format(r.len * 1000) + ' mm' },
+        { label: 'Stigning, takstol til møne', value: F2.format(r.rise), unit: 'm' },
+        { label: 'Stigning i prosent', value: F1.format(r.percent), unit: '%' }
+      ]
+    : [
+        { label: 'Taksidelengde (skrå)', value: F3.format(r.len), unit: 'm', sub: F0.format(r.len * 1000) + ' mm', primary: true },
+        { label: 'Stigning, takstol til møne', value: F2.format(r.rise), unit: 'm' },
+        { label: 'Stigning i prosent', value: F1.format(r.percent), unit: '%' }
+      ];
+  if (oh > 0) rows.push({ label: 'Taksidelengde med overheng', value: F3.format(r.lenOh), unit: 'm', sub: F0.format(r.lenOh * 1000) + ' mm' });
+  setOut('t-out', rows, [{ kind: 'info', text: 'Målt langs takflaten fra rafthøyde til møne.' }]);
+  $('t-svg').innerHTML = roofSvg(B, mode === 'A' ? wall : null, r.rise, r.angle);
+  fig.hidden = false;
+}
+
+/* ---------- Gable studs ---------- */
+function gableSvg(Bmm, base, t, rows, peakH){
+  const W = 320, Hh = 172, bottom = 158, maxW = 300, maxH = 140;
+  const s = Math.min(maxW / Bmm, maxH / peakH);
+  const w = Bmm * s, left = (W - w) / 2, cx = W / 2;
+  const eaveY = bottom - base * s, ridgeY = bottom - peakH * s;
+  const studs = rows.map(r => {
+    const x = left + r.x * s;
+    return `<line class="stud" x1="${x}" y1="${bottom}" x2="${x}" y2="${bottom - r.roofH * s}"/>`;
+  }).join('');
+  return `<svg viewBox="0 0 ${W} ${Hh}" role="img" aria-label="Gavlvegg med stendere">
+    <polygon class="shape" points="${left},${bottom} ${left},${eaveY} ${cx},${ridgeY} ${left + w},${eaveY} ${left + w},${bottom}"/>
+    ${studs}
+    <line class="ground" x1="10" y1="${bottom}" x2="${W - 10}" y2="${bottom}"/>
+  </svg>`;
+}
+
+let gableCopy = '';
+function updateGable(){
+  const B = num('g-b'), a = num('g-a'), cc = num('g-cc'), base = num('g-h'), cut = num('g-cut') || 0;
+  const more = $('g-more');
+  if (!(B > 0 && a > 0 && cc != null && base != null)){
+    more.hidden = true;
+    return setOut('g-out', null, null, 'Fyll inn bredde, vinkel, c/c og høyde ved gesims.');
+  }
+  if (a >= 85 || cc < 100 || cc > 1200){
+    more.hidden = true;
+    return setOut('g-out', null, null, 'Takvinkel må være under 85 grader, og c/c mellom 100 og 1200 mm.');
+  }
+  const g = calcGable(B, a, cc, base, cut);
+  if (!g){
+    more.hidden = true;
+    return setOut('g-out', null, null, 'Sjekk tallene du har lagt inn.');
+  }
+  const notes = [{ kind: 'info', text: 'Lengdene er målt til takflaten. Bruk Fradrag for svill og rem.' }];
+  if (g.min <= 0) notes.unshift({ kind: 'warn', text: 'Kortest stender blir 0 mm eller mindre. Sjekk høyde ved gesims og fradrag.' });
+  setOut('g-out', [
+    { label: 'Hver stender øker med', value: F1.format(g.step), unit: 'mm', sub: 'c/c ' + F0.format(cc) + ' × tan ' + F0.format(a) + '°', primary: true },
+    { label: 'Antall stendere', value: F0.format(g.count), unit: 'stk' },
+    { label: 'Kortest', value: F0.format(g.min), unit: 'mm' },
+    { label: g.ridgeStud ? 'Lengst (under møne)' : 'Lengst', value: F0.format(g.max), unit: 'mm' },
+    { label: 'Mønehøyde fra bunn', value: F0.format(g.peakH), unit: 'mm' }
+  ], notes);
+
+  $('g-svg').innerHTML = gableSvg(B * 1000, base, Math.tan(rad(a)), g.rows, g.peakH);
+
+  const list = $('g-list');
+  list.replaceChildren();
+  g.list.forEach(x => {
+    const li = document.createElement('li');
+    li.textContent = F0.format(x.count) + ' stk × ' + F0.format(x.len) + ' mm';
+    list.append(li);
+  });
+
+  const tb = $('g-rows');
+  tb.replaceChildren();
+  g.rows.forEach(r => {
+    const tr = document.createElement('tr');
+    if (Math.abs(r.len - g.max) < 0.5) tr.className = 'peak';
+    [F0.format(r.nr), F0.format(r.x) + ' mm', F0.format(r.len) + ' mm'].forEach(t => {
+      const td = document.createElement('td');
+      td.textContent = t;
+      tr.append(td);
+    });
+    tb.append(tr);
+  });
+  more.hidden = false;
+
+  gableCopy = 'Gavlstendere, bredde ' + F2.format(B) + ' m, ' + F1.format(a) + '°, c/c ' + F0.format(cc) + ' mm\n' +
+    'Økning per stender: ' + F1.format(g.step) + ' mm\n' +
+    g.list.map(x => x.count + ' stk × ' + Math.round(x.len) + ' mm').join('\n');
+}
+
+/* ---------- Stairs ---------- */
+let stairCopy = '';
+function stairLabel(a){
+  if (a.rise >= 200) return 'Bratt og krevende';
+  if (a.rise > 180) return 'Bratt, sjekk kravene';
+  if (a.rise <= 170 && a.tread >= 280) return 'Bekvem, dype trinn';
+  return 'Fornuftig trapp';
+}
+function renderStairAlts(H, n, f){
+  const host = $('s-alt'), box = $('s-alts');
+  if (H == null){ host.hidden = true; return; }
+  box.replaceChildren();
+  [n - 1, n, n + 1].filter(k => k >= 2).forEach(k => {
+    const a = stairFrom(H, k, f, null);
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'alt';
+    if (k === n) b.setAttribute('aria-current', 'true');
+    const mk = (cls, text) => { const el = document.createElement('span'); el.className = cls; el.textContent = text; return el; };
+    b.append(mk('n', k + ' trinn' + (k === n ? ' (valgt)' : '')));
+    if (a.bad){
+      b.append(mk('tag', 'Passer ikke trappeformelen'));
+    } else {
+      b.dataset.rise = String(a.rise);
+      b.append(
+        mk('l', 'Opptrinn ' + F1.format(a.rise) + ' mm'),
+        mk('l', 'Inntrinn ' + F1.format(a.tread) + ' mm'),
+        mk('l', 'Løp ' + F0.format(a.run) + ' mm'),
+        mk('tag', stairLabel(a))
+      );
+    }
+    box.append(b);
+  });
+  host.hidden = false;
+}
+function updateStair(){
+  const mode = $('panel-trapp').dataset.mode;
+  const H = num('s-h'), f = num('s-f');
+  const copyBtn = $('s-copy');
+  let r = null, wanted = null;
+  if (mode === 'A'){
+    wanted = num('s-rise');
+    if (H > 0 && wanted > 0 && f > 0) r = calcStairFromHeight(H, wanted, f);
+  } else {
+    const L = num('s-run');
+    if (H > 0 && L > 0 && f > 0) r = calcStairFromRun(H, L, f);
+  }
+  if (!r){ copyBtn.hidden = true; $('s-alt').hidden = true; return setOut('s-out', null, null, 'Fyll inn alle feltene.'); }
+  if (r.bad){
+    copyBtn.hidden = true;
+    $('s-alt').hidden = true;
+    return setOut('s-out', null, null, 'Formelen gir inntrinn på 0 mm eller mindre. Sjekk høyde og trappeformel.');
+  }
+  const rows = [
+    { label: 'Antall trinn (opptrinn)', value: F0.format(r.n), unit: 'stk', primary: true },
+    { label: 'Opptrinn', value: F1.format(r.rise), unit: 'mm' },
+    { label: 'Inntrinn', value: F1.format(r.tread), unit: 'mm' },
+    { label: 'Antall inntrinn', value: F0.format(r.treads), unit: 'stk' },
+    { label: 'Lengde i løpet', value: F0.format(r.run), unit: 'mm', sub: F2.format(r.run / 1000) + ' m' },
+    { label: 'Trappevinkel', value: F1.format(r.angle), unit: '°' },
+    { label: 'Lengde langs trinnkantene', value: F0.format(r.pitch), unit: 'mm', sub: 'Legg til for kapp i begge ender' },
+    { label: '2 × opptrinn + inntrinn', value: F1.format(r.sum), unit: 'mm' }
+  ];
+  const notes = [];
+  const probs = [];
+  if (r.rise > 180) probs.push('opptrinn over 180 mm');
+  if (r.tread < 250) probs.push('inntrinn under 250 mm');
+  if (r.sum < 600 || r.sum > 640) probs.push('trappeformelen utenfor 600 til 640 mm');
+  if (probs.length) notes.push({ kind: 'warn', text: 'Utenfor vanlig komfortområde: ' + probs.join(', ') + '. Sjekk kravene i TEK17 § 12-14 for din trapp.' });
+  if (mode === 'A' && Math.abs(r.rise - wanted) > 0.05) notes.push({ kind: 'info', text: 'Ønsket opptrinn ' + F1.format(wanted) + ' mm er justert til ' + F1.format(r.rise) + ' mm, slik at trinnene går opp i høyden.' });
+  if (mode === 'B') notes.push({ kind: 'info', text: 'Antall trinn er valgt for å ligge så nær trappeformelen som mulig på plassen du har.' });
+  if (!probs.length) notes.push({ kind: 'ok', text: 'Trinnene ligger innenfor vanlig komfortområde.' });
+  setOut('s-out', rows, notes);
+  renderStairAlts(mode === 'A' ? H : null, r.n, f);
+  copyBtn.hidden = false;
+  stairCopy = 'Trapp, høyde ' + F0.format(H) + ' mm\n' +
+    r.n + ' trinn, opptrinn ' + F1.format(r.rise) + ' mm, inntrinn ' + F1.format(r.tread) + ' mm\n' +
+    'Lengde i løpet ' + F0.format(r.run) + ' mm, vinkel ' + F1.format(r.angle) + '°';
+}
+
+/* ---------- Angle converter ---------- */
+const angleFields = { 'v-deg': 'deg', 'v-pct': 'pct', 'v-ratio': 'ratio', 'v-mm': 'mm' };
+function syncAngles(srcId){
+  const v = num(srcId);
+  if (v == null || !(v > 0)) return;
+  const a = anglesFrom(angleFields[srcId], v);
+  if (!a) return;
+  const map = { 'v-deg': [a.deg, 1], 'v-pct': [a.pct, 1], 'v-ratio': [a.ratio, 2], 'v-mm': [a.mm, 0] };
+  Object.keys(map).forEach(id => { if (id !== srcId) $(id).value = plain(map[id][0], map[id][1]); });
+}
+
+/* ---------- Copy ---------- */
+async function copyText(text, btn){
+  const old = btn.textContent;
+  try {
+    await navigator.clipboard.writeText(text);
+    btn.textContent = 'Kopiert';
+  } catch (e) {
+    try {
+      const ta = document.createElement('textarea');
+      ta.value = text;
+      ta.style.position = 'fixed';
+      ta.style.opacity = '0';
+      document.body.append(ta);
+      ta.select();
+      const ok = document.execCommand('copy');
+      ta.remove();
+      btn.textContent = ok ? 'Kopiert' : 'Kunne ikke kopiere';
+    } catch (e2) {
+      btn.textContent = 'Kunne ikke kopiere';
+    }
+  }
+  setTimeout(() => { btn.textContent = old; }, 1600);
+}
+
+/* ---------- Wiring ---------- */
+const updaters = { rektangel: updateRect, tak: updateRoof, gavl: updateGable, trapp: updateStair, vinkel: function(){} };
+
+document.addEventListener('input', e => {
+  const t = e.target;
+  if (!t.matches || !t.matches('input')) return;
+  if (angleFields[t.id]) { syncAngles(t.id); return; }
+  const panel = t.closest('.tool');
+  if (panel && updaters[panel.dataset.tool]) updaters[panel.dataset.tool]();
+});
+
+document.addEventListener('click', e => {
+  const chip = e.target.closest('.chip');
+  if (chip){
+    const input = $(chip.dataset.set);
+    input.value = chip.dataset.value;
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+    return;
+  }
+  const alt = e.target.closest('.alt');
+  if (alt && alt.dataset.rise){
+    const input = $('s-rise');
+    input.value = plain(Number(alt.dataset.rise), 1);
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+    return;
+  }
+  const seg = e.target.closest('.seg button');
+  if (seg){
+    const panel = seg.closest('.tool');
+    panel.dataset.mode = seg.dataset.mode;
+    applyMode(panel);
+    updaters[panel.dataset.tool]();
+  }
+});
+
+function applyMode(panel){
+  const mode = panel.dataset.mode;
+  panel.querySelectorAll('.seg button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.mode === mode)));
+  panel.querySelectorAll('[data-show]').forEach(el => { el.hidden = el.dataset.show !== mode; });
+}
+
+$('g-copy').addEventListener('click', e => copyText(gableCopy, e.currentTarget));
+$('s-copy').addEventListener('click', e => copyText(stairCopy, e.currentTarget));
+
+const toolIds = ['rektangel', 'tak', 'gavl', 'trapp', 'vinkel'];
+function route(){
+  const h = location.hash.replace('#', '');
+  const id = toolIds.includes(h) ? h : 'rektangel';
+  toolIds.forEach(t => { $('panel-' + t).hidden = t !== id; });
+  document.querySelectorAll('.tab').forEach(a => {
+    if (a.dataset.tab === id) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current');
+  });
+}
+window.addEventListener('hashchange', route);
+
+document.querySelectorAll('.tool[data-mode]').forEach(applyMode);
+syncAngles('v-deg');
+updateRect(); updateRoof(); updateGable(); updateStair();
+route();
+})();
+</script>
+
+</body>
+</html>
