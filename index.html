@@ -430,8 +430,14 @@ body{margin:0}
       <h3 class="sect">Kappliste</h3>
       <ul class="cutlist" id="w-list"></ul>
       <h3 class="sect">Merk av på svill og rem, fra venstre ende</h3>
+      <div class="seg" role="group" aria-label="Stender på hvilken side av streken" id="w-side-seg">
+        <button type="button" data-side="R" aria-pressed="true">Kryss til høyre</button>
+        <button type="button" data-side="L" aria-pressed="false">Kryss til venstre</button>
+      </div>
+      <input type="hidden" id="w-side" value="R">
+      <p class="help" style="margin:-8px 0 12px">Strek på målet, kryss på den siden stenderen skal stå.</p>
       <div class="table-wrap"><table>
-        <thead><tr><th>Nr</th><th>Venstre kant</th><th>Stender</th></tr></thead>
+        <thead><tr><th>Nr</th><th>Strek</th><th>Kryss</th><th>Stender</th></tr></thead>
         <tbody id="w-rows"></tbody>
       </table></div>
       <button type="button" class="btn" id="w-copy">Kopier kappliste</button>
@@ -1257,6 +1263,8 @@ function updateWall(){
   if (w.nRem) lines.push(w.nRem + ' stk × ' + F0.format(L) + ' mm rem');
   lines.forEach(t => { const li = document.createElement('li'); li.textContent = t; list.append(li); });
 
+  const right = $('w-side').value !== 'L';
+  document.querySelectorAll('#w-side-seg button').forEach(b => b.setAttribute('aria-pressed', String((b.dataset.side === 'R') === right)));
   const tb = $('w-rows');
   tb.replaceChildren();
   w.studs.forEach((s, i) => {
@@ -1264,7 +1272,8 @@ function updateWall(){
     const txt = s.kind === 'cut'
       ? s.pieces.map(p => F0.format(p.len) + ' ' + p.kind).join(' · ')
       : (s.kind === 'karm' ? 'karm ' : '') + F0.format(w.full);
-    [F0.format(i + 1), F0.format(s.x) + ' mm', txt].forEach(v => {
+    const line = right ? s.x : s.x + t;
+    [F0.format(i + 1), F0.format(line) + ' mm', right ? '→ X' : 'X ←', txt].forEach(v => {
       const td = document.createElement('td');
       td.textContent = v;
       tr.append(td);
@@ -1275,7 +1284,7 @@ function updateWall(){
 
   wallCopy = 'Precut vegg ' + F0.format(L) + ' × ' + F0.format(H) + ' mm, c/c ' + F0.format(cc) + '\n' +
     lines.join('\n').replace(/ /g, ' ') + '\n' +
-    'Merker (venstre kant): ' + w.studs.map(s => Math.round(s.x)).join(', ');
+    'Strek (kryss til ' + (right ? 'høyre' : 'venstre') + '): ' + w.studs.map(s => Math.round(right ? s.x : s.x + t)).join(', ');
 }
 
 function updateDivision(){
@@ -1444,6 +1453,12 @@ document.addEventListener('click', e => {
   if (step){
     adj[step.dataset.step] += Number(step.dataset.dir);
     updateDivision();
+    return;
+  }
+  const side = e.target.closest('#w-side-seg button');
+  if (side){
+    $('w-side').value = side.dataset.side;
+    updateWall(); save();
     return;
   }
   const chip = e.target.closest('.chip');
