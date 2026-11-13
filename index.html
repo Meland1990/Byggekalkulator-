@@ -447,11 +447,12 @@ body{margin:0}
   <!-- GABLE STUDS -->
   <section class="tool" id="panel-gavl" data-tool="gavl" data-mode="A" hidden>
     <h2>Gavlstendere</h2>
-    <p class="intro">Lengde på hver stender i en gavlvegg. Første stender står i venstre hjørne, resten på valgt c/c.</p>
+    <p class="intro">Lengde på hver stender i en gavlvegg. Endestenderne står i flukt med hjørnene, de andre med senter på c/c målt fra venstre hjørne.</p>
     <div class="fields">
       <div class="field"><label for="g-b">Gavlbredde</label><div class="box"><input id="g-b" type="text" inputmode="decimal" autocomplete="off" value="6,0"><span class="suffix">m</span></div></div>
       <div class="field"><label for="g-a">Takvinkel</label><div class="box"><input id="g-a" type="text" inputmode="decimal" autocomplete="off" value="27"><span class="suffix">°</span></div></div>
       <div class="field"><label for="g-cc">c/c</label><div class="box"><input id="g-cc" type="text" inputmode="decimal" autocomplete="off" value="600"><span class="suffix">mm</span></div></div>
+      <div class="field"><label for="g-t">Stendertykkelse</label><div class="box"><input id="g-t" type="text" inputmode="decimal" autocomplete="off" value="48"><span class="suffix">mm</span></div></div>
       <div class="field"><label for="g-h">Høyde ved gesims</label><div class="box"><input id="g-h" type="text" inputmode="decimal" autocomplete="off" value="2500"><span class="suffix">mm</span></div><p class="help">Kortest stender, ytterst på veggen.</p></div>
       <div class="field"><label for="g-sv">Svill</label><div class="box"><input id="g-sv" type="text" inputmode="decimal" autocomplete="off" value="0"><span class="suffix">mm</span></div><p class="help">Trekkes fra hver stender.</p></div>
       <div class="field"><label for="g-rem">Rem</label><div class="box"><input id="g-rem" type="text" inputmode="decimal" autocomplete="off" value="0"><span class="suffix">mm</span></div><p class="help">Trekkes fra hver stender.</p></div>
@@ -486,9 +487,14 @@ body{margin:0}
       <figure class="figure"><div id="g-svg"></div><figcaption>Gavlen sett utenfra, tegnet i målestokk. Vinduer er markert i oransje.</figcaption></figure>
       <h3 class="sect">Kappliste</h3>
       <ul class="cutlist" id="g-list"></ul>
-      <h3 class="sect">Alle stendere fra venstre</h3>
+      <h3 class="sect">Merk av på svill, fra venstre hjørne</h3>
+      <div class="seg" role="group" aria-label="Stender på hvilken side av streken" id="g-side-seg">
+        <button type="button" data-side="R" aria-pressed="true">Kryss til høyre</button>
+        <button type="button" data-side="L" aria-pressed="false">Kryss til venstre</button>
+      </div>
+      <input type="hidden" id="g-side" value="R">
       <div class="table-wrap"><table>
-        <thead><tr><th>Nr</th><th>Fra hjørne</th><th>Lengde</th></tr></thead>
+        <thead><tr><th>Nr</th><th>Strek mm</th><th>Kryss</th><th>Lengde mm</th></tr></thead>
         <tbody id="g-rows"></tbody>
       </table></div>
       <button type="button" class="btn" id="g-copy">Kopier kappliste</button>
@@ -571,13 +577,15 @@ function calcRoofAngle(B, angleDeg, ohMm){
 /* Gable studs. wins: [{x, w, bottom, top}] in mm from left corner / underside of sill.
    A stud whose position lies inside a window opening is split into pieces
    below, between and above the openings. */
-function calcGable(Bm, angleDeg, cc, base, svill, rem, wins, losU, losO){
+function calcGable(Bm, angleDeg, cc, base, svill, rem, wins, losU, losO, studT){
   if (!(Bm > 0) || !(angleDeg > 0) || !(angleDeg < 85) || !(cc >= 100) || !(base >= 0)) return null;
   svill = svill || 0; rem = rem || 0; wins = wins || []; losU = losU || 0; losO = losO || 0;
   const Bmm = Bm * 1000, t = Math.tan(rad(angleDeg));
   const roofAt = x => base + Math.min(x, Bmm - x) * t;
   const xs = [];
-  for (let i = 0; i * cc < Bmm - 0.5 && i < 400; i++) xs.push(i * cc);
+  const tk = studT > 0 ? studT : 48;
+  xs.push(0);
+  for (let i = 1; i * cc + tk / 2 < Bmm - tk + 0.5 && i < 400; i++) xs.push(i * cc);
   xs.push(Bmm);
   const rows = xs.map((x, i) => {
     const roofH = roofAt(x);
@@ -1020,7 +1028,8 @@ function updateGable(){
     return setOut('g-out', null, null, 'Takvinkel må være under 85 grader, og c/c mellom 100 og 1200 mm.');
   }
   const losU = num('g-lu') || 0, losO = num('g-lo') || 0;
-  const g = calcGable(B, a, cc, base, svill, rem, win.wins, losU, losO);
+  const tk = num('g-t') > 0 ? num('g-t') : 48;
+  const g = calcGable(B, a, cc, base, svill, rem, win.wins, losU, losO, tk);
   if (!g){
     more.hidden = true;
     return setOut('g-out', null, null, 'Sjekk tallene du har lagt inn.');
@@ -1056,15 +1065,19 @@ function updateGable(){
   });
   losholt.forEach(l => { const li = document.createElement('li'); li.textContent = l.text; list.append(li); });
 
+  const right = $('g-side').value !== 'L';
+  document.querySelectorAll('#g-side-seg button').forEach(b => b.setAttribute('aria-pressed', String((b.dataset.side === 'R') === right)));
+  const leftEdge = (r, i) => i === 0 ? 0 : i === g.rows.length - 1 ? r.x - tk : r.x - tk / 2;
   const tb = $('g-rows');
   tb.replaceChildren();
-  g.rows.forEach(r => {
+  g.rows.forEach((r, i) => {
     const tr = document.createElement('tr');
     if (!r.pieces && Math.abs(r.len - g.max) < 0.5) tr.className = 'peak';
     const lenText = r.pieces
-      ? r.pieces.map(p => F0.format(p.len) + ' ' + (p.kind === 'under' ? 'under' : p.kind === 'over' ? 'over' : 'mellom')).join(' · ')
-      : F0.format(r.len) + ' mm';
-    [F0.format(r.nr), F0.format(r.x) + ' mm', lenText].forEach(t => {
+      ? r.pieces.map(p => F0.format(p.len) + ' ' + (p.kind === 'under' ? 'under' : p.kind === 'over' ? 'over' : 'mellom')).join(' + ')
+      : F0.format(r.len);
+    const le = leftEdge(r, i);
+    [F0.format(r.nr), F0.format(right ? le : le + tk), right ? '→X' : 'X←', lenText].forEach(t => {
       const td = document.createElement('td');
       td.textContent = t;
       tr.append(td);
@@ -1076,7 +1089,8 @@ function updateGable(){
   gableCopy = 'Gavlstendere, bredde ' + F2.format(B) + ' m, ' + F1.format(a) + '°, c/c ' + F0.format(cc) + ' mm\n' +
     'Økning per stender: ' + F1.format(g.step) + ' mm\n' +
     g.list.map(x => x.count + ' stk × ' + Math.round(x.len) + ' mm' + kindText[x.kind]).join('\n') +
-    (losholt.length ? '\n' + losholt.map(l => l.copy).join('\n') : '');
+    (losholt.length ? '\n' + losholt.map(l => l.copy).join('\n') : '') +
+    '\nStrek (kryss til ' + (right ? 'høyre' : 'venstre') + '): ' + g.rows.map((r, i) => Math.round(leftEdge(r, i) + (right ? 0 : tk))).join(', ');
 }
 
 /* ---------- Cladding and balusters ---------- */
@@ -1455,10 +1469,12 @@ document.addEventListener('click', e => {
     updateDivision();
     return;
   }
-  const side = e.target.closest('#w-side-seg button');
+  const side = e.target.closest('#w-side-seg button, #g-side-seg button');
   if (side){
-    $('w-side').value = side.dataset.side;
-    updateWall(); save();
+    const isWall = !!side.closest('#w-side-seg');
+    $(isWall ? 'w-side' : 'g-side').value = side.dataset.side;
+    if (isWall) updateWall(); else updateGable();
+    save();
     return;
   }
   const chip = e.target.closest('.chip');
