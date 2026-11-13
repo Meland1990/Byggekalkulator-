@@ -243,6 +243,7 @@ details.more .results{margin-top:12px}
 .board-u{fill:var(--field);stroke:var(--ink);stroke-width:1}
 .board-o{fill:var(--accent);stroke:var(--ink);stroke-width:1;opacity:.85}
 .win{fill:var(--panel);stroke:var(--accent);stroke-width:2}
+.stud.karm{stroke-width:3}
 @media (prefers-reduced-motion:reduce){*{scroll-behavior:auto!important;transition:none!important}}
 [hidden]{display:none!important}
 body{margin:0}
@@ -260,6 +261,7 @@ body{margin:0}
   <nav class="tabs" aria-label="Verktøy">
     <a class="tab" href="#rektangel" data-tab="rektangel">Flate og volum</a>
     <a class="tab" href="#inndeling" data-tab="inndeling">Kledning og spiler</a>
+    <a class="tab" href="#vegg" data-tab="vegg">Precut vegg</a>
     <a class="tab" href="#gavl" data-tab="gavl">Gavlstendere</a>
     <a class="tab" href="#tak" data-tab="tak">Takvinkel</a>
     <a class="tab" href="#trapp" data-tab="trapp">Trapp</a>
@@ -377,6 +379,63 @@ body{margin:0}
     </div>
     <div class="results" id="t-out" aria-live="polite"></div>
     <figure class="figure" id="t-fig" hidden><div id="t-svg"></div><figcaption>Snitt gjennom huset. Stiplet linje viser stigningen fra underkant takstol til møne.</figcaption></figure>
+  </section>
+
+  <!-- PRECUT WALL -->
+  <section class="tool" id="panel-vegg" data-tool="vegg" data-mode="A" hidden>
+    <h2>Precut vegg</h2>
+    <p class="intro">Rett vegg med stendere på c/c. Endestendere i flukt med veggendene, de andre står med senter på c/c-målet, slik at plateskjøtene treffer.</p>
+    <div class="fields">
+      <div class="field"><label for="w-l">Vegglengde</label><div class="box"><input id="w-l" type="text" inputmode="decimal" autocomplete="off" value="7200"><span class="suffix">mm</span></div></div>
+      <div class="field"><label for="w-h">Vegghøyde</label><div class="box"><input id="w-h" type="text" inputmode="decimal" autocomplete="off" value="2400"><span class="suffix">mm</span></div><p class="help">Underkant svill til overkant rem.</p></div>
+      <div class="field"><label for="w-cc">c/c</label><div class="box"><input id="w-cc" type="text" inputmode="decimal" autocomplete="off" value="600"><span class="suffix">mm</span></div></div>
+      <div class="field"><label for="w-t">Stendertykkelse</label><div class="box"><input id="w-t" type="text" inputmode="decimal" autocomplete="off" value="48"><span class="suffix">mm</span></div></div>
+      <div class="field"><label for="w-sv">Svill</label><div class="box"><input id="w-sv" type="text" inputmode="decimal" autocomplete="off" value="48"><span class="suffix">mm</span></div></div>
+      <div class="field"><label for="w-rem">Rem</label><div class="box"><input id="w-rem" type="text" inputmode="decimal" autocomplete="off" value="48"><span class="suffix">mm</span></div><p class="help">96 ved dobbel rem.</p></div>
+    </div>
+    <div class="chips"><span class="lbl">c/c</span>
+      <button type="button" class="chip" data-set="w-cc" data-value="300">300</button>
+      <button type="button" class="chip" data-set="w-cc" data-value="400">400</button>
+      <button type="button" class="chip" data-set="w-cc" data-value="600">600</button>
+    </div>
+    <div class="chips"><span class="lbl">Rem</span>
+      <button type="button" class="chip" data-set="w-rem" data-value="48">Enkel</button>
+      <button type="button" class="chip" data-set="w-rem" data-value="96">Dobbel</button>
+    </div>
+
+    <div class="winbox">
+      <div class="seg" role="group" aria-label="Høyde på åpning oppgis som">
+        <button type="button" data-mode="A" aria-pressed="true">Brystningshøyde</button>
+        <button type="button" data-mode="B" aria-pressed="false">Overkant åpning</button>
+      </div>
+      <div class="fields">
+        <div class="field"><label for="w-on">Vinduer og dører</label><div class="box"><input id="w-on" type="text" inputmode="numeric" autocomplete="off" value="2"><span class="suffix">stk</span></div></div>
+        <div class="field"><label for="w-lu">Losholt under</label><div class="box"><input id="w-lu" type="text" inputmode="decimal" autocomplete="off" value="48"><span class="suffix">mm</span></div></div>
+        <div class="field"><label for="w-lo">Losholt / overligger</label><div class="box"><input id="w-lo" type="text" inputmode="decimal" autocomplete="off" value="48"><span class="suffix">mm</span></div><p class="help">Høyden på overliggeren.</p></div>
+      </div>
+      <div class="chips"><span class="lbl">Antall</span>
+        <button type="button" class="chip" data-set="w-on" data-value="0">0</button>
+        <button type="button" class="chip" data-set="w-on" data-value="1">1</button>
+        <button type="button" class="chip" data-set="w-on" data-value="2">2</button>
+        <button type="button" class="chip" data-set="w-on" data-value="3">3</button>
+        <button type="button" class="chip" data-set="w-on" data-value="4">4</button>
+      </div>
+      <p class="help" style="margin-top:12px">Råhullsmål. Høyder fra underkant svill. Dør: sett brystningshøyde til 0. Avstand fra venstre veggende til venstre kant av hullet.</p>
+      <div id="w-wins"></div>
+    </div>
+
+    <div class="results" id="w-out" aria-live="polite"></div>
+    <div id="w-more" hidden>
+      <figure class="figure"><div id="w-svg"></div><figcaption>Veggen sett forfra. Åpninger i oransje, karmstendere tykkere.</figcaption></figure>
+      <h3 class="sect">Kappliste</h3>
+      <ul class="cutlist" id="w-list"></ul>
+      <h3 class="sect">Merk av på svill og rem, fra venstre ende</h3>
+      <div class="table-wrap"><table>
+        <thead><tr><th>Nr</th><th>Venstre kant</th><th>Stender</th></tr></thead>
+        <tbody id="w-rows"></tbody>
+      </table></div>
+      <button type="button" class="btn" id="w-copy">Kopier kappliste</button>
+    </div>
   </section>
 
   <!-- GABLE STUDS -->
@@ -585,6 +644,82 @@ function calcCladdingMaterial(boards, lenMm, wastePct, battCc, nailsPer){
     lmWaste: boards * lenMm / 1000 * w,
     rowsBatt,
     nails: rowsBatt && nailsPer > 0 ? Math.ceil(boards * rowsBatt * nailsPer * w) : null
+  };
+}
+
+/* Precut straight wall. End studs flush with the wall ends, the others centred on
+   multiples of c/c from the left end. Openings get a full-height karmstender on
+   each side; c/c studs inside an opening become short studs below and above. */
+function calcWall(L, H, cc, t, svill, rem, opens, losU, losO){
+  if (!(L > 0) || !(H > 0) || !(cc >= 100) || !(t > 0) || L < 2 * t) return null;
+  svill = svill || 0; rem = rem || 0; opens = opens || []; losU = losU || 0; losO = losO || 0;
+  const full = H - svill - rem;
+  if (!(full > 0)) return null;
+  const tol = 0.5;
+  const overlaps = (a, b) => a < b + t - tol && b < a + t - tol;
+
+  const ends = [0, L - t];
+  const middles = [];
+  for (let i = 1; i * cc + t / 2 < L - t + tol && i < 400; i++) middles.push(i * cc - t / 2);
+
+  let karms = [];
+  opens.forEach(o => { karms.push(o.x - t, o.x + o.w); });
+  karms = karms.filter(k => k >= -tol && k <= L - t + tol && !ends.some(e => overlaps(k, e)));
+  karms = karms.sort((a, b) => a - b).filter((k, i, arr) => i === 0 || !overlaps(k, arr[i - 1]));
+
+  const studs = [];
+  ends.forEach(x => studs.push({ x, kind: 'full' }));
+  karms.forEach(x => studs.push({ x, kind: 'karm' }));
+  middles.forEach(x => {
+    if (karms.some(k => overlaps(x, k))) return;
+    const hit = opens.filter(o => x + t > o.x + tol && x < o.x + o.w - tol).sort((a, b) => a.bottom - b.bottom);
+    if (!hit.length) { studs.push({ x, kind: 'full' }); return; }
+    const pieces = [];
+    let from = svill, first = true;
+    hit.forEach(o => {
+      if (o.bottom > svill + tol) pieces.push({ kind: first ? 'under' : 'mellom', len: o.bottom - losU - from });
+      from = o.top + losO; first = false;
+    });
+    pieces.push({ kind: 'over', len: H - rem - from });
+    studs.push({ x, kind: 'cut', pieces: pieces.filter(p => p.len > tol) });
+  });
+  studs.sort((a, b) => a.x - b.x);
+
+  const groups = new Map();
+  const add = (kind, len, n) => { const k = kind + '|' + Math.round(len); groups.set(k, (groups.get(k) || 0) + (n || 1)); };
+  studs.forEach(s => {
+    if (s.kind === 'cut') s.pieces.forEach(p => add(p.kind, p.len));
+    else add(s.kind, full);
+  });
+  opens.forEach(o => {
+    if (o.bottom > svill + tol && losU > 0) add('losholt', o.w);
+    if (losO > 0) add('losholt', o.w);
+  });
+  const nSvill = svill > 0 ? 1 : 0;
+  const nRem = rem > 0 ? Math.max(1, Math.round(rem / t)) : 0;
+  const order = { full: 0, karm: 1, under: 2, mellom: 3, over: 4, losholt: 5 };
+  const list = [...groups.entries()].map(([k, count]) => {
+    const [kind, len] = k.split('|');
+    return { kind, len: Number(len), count };
+  }).sort((a, b) => order[a.kind] - order[b.kind] || a.len - b.len);
+
+  const checks = opens.map(o => {
+    const issues = [];
+    if (o.x < 0 || o.x + o.w > L) issues.push('går utenfor veggen');
+    else if (o.x > 0 && o.x < t) issues.push('står for nær veggenden til karmstender');
+    if (o.top + losO > H - rem + tol) issues.push('går opp i remmen');
+    return { nr: o.nr, issues };
+  });
+
+  const lmStud = list.filter(x => x.kind !== 'losholt').reduce((s, x) => s + x.count * x.len, 0) / 1000;
+  const lmLos = list.filter(x => x.kind === 'losholt').reduce((s, x) => s + x.count * x.len, 0) / 1000;
+  return {
+    full, studs, list, checks, nSvill, nRem,
+    nFull: studs.filter(s => s.kind === 'full').length,
+    nKarm: studs.filter(s => s.kind === 'karm').length,
+    nShort: studs.filter(s => s.kind === 'cut').reduce((n, s) => n + s.pieces.length, 0),
+    lmStud, lmLos, lmPlate: (nSvill + nRem) * L / 1000,
+    hasDoor: opens.some(o => o.bottom <= svill + tol)
   };
 }
 
@@ -811,43 +946,55 @@ const WIN_DEFAULTS = [
   { w: 1000, h: 1200, x: 4400, y: 900 },
   { w: 600, h: 600, x: 2700, y: 2500 }
 ];
-function buildWindowFields(){
-  const host = $('g-wins');
-  WIN_DEFAULTS.forEach((d, i) => {
-    const n = i + 1;
+const WALL_OPEN_DEFAULTS = [
+  { w: 1000, h: 1200, x: 1200, y: 900 },
+  { w: 1000, h: 2100, x: 3000, y: 0 },
+  { w: 1000, h: 1200, x: 4800, y: 900 },
+  { w: 600, h: 600, x: 6000, y: 1500 }
+];
+/* Window/opening input blocks. prefix: id prefix (gw, ww). label: "Vindu" or "Åpning". */
+function buildWindowFields(hostId, prefix, defaults, label, yHelp){
+  const host = $(hostId);
+  defaults.forEach((d, i) => {
+    const n = i + 1, p = prefix + n;
     const fs = document.createElement('fieldset');
     fs.className = 'win-block';
     fs.dataset.win = String(n);
     fs.innerHTML =
-      `<legend>Vindu ${n}</legend><div class="fields">` +
-      `<div class="field"><label for="gw${n}-w">Bredde</label><div class="box"><input id="gw${n}-w" type="text" inputmode="decimal" autocomplete="off" value="${d.w}"><span class="suffix">mm</span></div></div>` +
-      `<div class="field"><label for="gw${n}-h">Høyde</label><div class="box"><input id="gw${n}-h" type="text" inputmode="decimal" autocomplete="off" value="${d.h}"><span class="suffix">mm</span></div></div>` +
-      `<div class="field"><label for="gw${n}-x">Fra venstre hjørne</label><div class="box"><input id="gw${n}-x" type="text" inputmode="decimal" autocomplete="off" value="${d.x}"><span class="suffix">mm</span></div></div>` +
-      `<div class="field"><label for="gw${n}-y"><span data-show="A">Brystningshøyde</span><span data-show="B" hidden>Overkant vindu</span></label><div class="box"><input id="gw${n}-y" type="text" inputmode="decimal" autocomplete="off" value="${d.y}"><span class="suffix">mm</span></div></div>` +
+      `<legend>${label} ${n}</legend><div class="fields">` +
+      `<div class="field"><label for="${p}-w">Bredde</label><div class="box"><input id="${p}-w" type="text" inputmode="decimal" autocomplete="off" value="${d.w}"><span class="suffix">mm</span></div></div>` +
+      `<div class="field"><label for="${p}-h">Høyde</label><div class="box"><input id="${p}-h" type="text" inputmode="decimal" autocomplete="off" value="${d.h}"><span class="suffix">mm</span></div></div>` +
+      `<div class="field"><label for="${p}-x">Fra venstre ende</label><div class="box"><input id="${p}-x" type="text" inputmode="decimal" autocomplete="off" value="${d.x}"><span class="suffix">mm</span></div></div>` +
+      `<div class="field"><label for="${p}-y"><span data-show="A">Brystningshøyde</span><span data-show="B" hidden>Overkant åpning</span></label><div class="box"><input id="${p}-y" type="text" inputmode="decimal" autocomplete="off" value="${d.y}"><span class="suffix">mm</span></div>${yHelp ? `<p class="help">${yHelp}</p>` : ''}</div>` +
       `</div>`;
     host.append(fs);
   });
+}
+
+function readOpenings(hostId, prefix, countId, panelId){
+  let count = Math.round(num(countId) || 0);
+  count = Math.min(WIN_MAX, Math.max(0, count));
+  const fromTop = $(panelId).dataset.mode === 'B';
+  const wins = [];
+  let missing = false;
+  document.querySelectorAll('#' + hostId + ' .win-block').forEach(fs => {
+    const n = Number(fs.dataset.win);
+    fs.hidden = n > count;
+    if (n > count) return;
+    const p = prefix + n;
+    const w = num(p + '-w'), h = num(p + '-h'), x = num(p + '-x'), y = num(p + '-y');
+    if (!(w > 0 && h > 0 && x != null && y != null)) { missing = true; return; }
+    const bottom = Math.max(0, fromTop ? y - h : y);
+    wins.push({ nr: n, x, w, h, bottom, top: bottom + h });
+  });
+  return { wins, missing };
 }
 
 function readWindows(){
   const on = $('g-win').checked;
   $('g-winbox').hidden = !on;
   if (!on) return { wins: [], missing: false };
-  let count = Math.round(num('g-wn') || 0);
-  count = Math.min(WIN_MAX, Math.max(0, count));
-  const fromTop = $('panel-gavl').dataset.mode === 'B';
-  const wins = [];
-  let missing = false;
-  document.querySelectorAll('#g-wins .win-block').forEach(fs => {
-    const n = Number(fs.dataset.win);
-    fs.hidden = n > count;
-    if (n > count) return;
-    const w = num('gw' + n + '-w'), h = num('gw' + n + '-h'), x = num('gw' + n + '-x'), y = num('gw' + n + '-y');
-    if (!(w > 0 && h > 0 && x != null && y != null)) { missing = true; return; }
-    const bottom = fromTop ? y - h : y;
-    wins.push({ nr: n, x, w, h, bottom, top: bottom + h });
-  });
-  return { wins, missing };
+  return readOpenings('g-wins', 'gw', 'g-wn', 'panel-gavl');
 }
 
 const kindText = { full: '', under: ' under vindu', mellom: ' mellom vinduer', over: ' over vindu' };
@@ -1048,6 +1195,89 @@ function updateBalusters(){
     'Venstre kant: ' + p.lefts.map(x => plain(x, 0)).join(', ');
 }
 
+/* ---------- Precut wall ---------- */
+const wallKind = { full: 'stender', karm: 'karmstender', under: 'under åpning', mellom: 'mellom åpninger', over: 'over åpning', losholt: 'losholt' };
+
+function wallSvg(L, H, t, studs, opens, svill, rem){
+  const VW = 320, VH = 150, pad = 10;
+  const s = Math.min((VW - 2 * pad) / L, (VH - 20) / H);
+  const left = (VW - L * s) / 2, bottom = VH - 8;
+  const y = h => bottom - h * s;
+  const ow = opens.map(o => `<rect class="win" x="${left + o.x * s}" y="${y(o.top)}" width="${o.w * s}" height="${o.h * s}"/>`).join('');
+  const st = studs.map(st => {
+    const x = left + (st.x + t / 2) * s;
+    const cls = st.kind === 'karm' ? 'stud karm' : 'stud';
+    if (st.kind !== 'cut') return `<line class="${cls}" x1="${x}" y1="${y(svill)}" x2="${x}" y2="${y(H - rem)}"/>`;
+    const hit = opens.filter(o => st.x + t > o.x && st.x < o.x + o.w).sort((a, b) => a.bottom - b.bottom);
+    let from = svill, out = '';
+    hit.forEach(o => { if (o.bottom > from) out += `<line class="stud" x1="${x}" y1="${y(from)}" x2="${x}" y2="${y(o.bottom)}"/>`; from = o.top; });
+    out += `<line class="stud" x1="${x}" y1="${y(from)}" x2="${x}" y2="${y(H - rem)}"/>`;
+    return out;
+  }).join('');
+  return `<svg viewBox="0 0 ${VW} ${VH}" role="img" aria-label="Vegg med stendere og åpninger">
+    <rect class="shape" x="${left}" y="${y(H)}" width="${L * s}" height="${H * s}"/>
+    ${ow}${st}
+    <line class="ground" x1="${pad}" y1="${bottom}" x2="${VW - pad}" y2="${bottom}"/>
+  </svg>`;
+}
+
+let wallCopy = '';
+function updateWall(){
+  const L = num('w-l'), H = num('w-h'), cc = num('w-cc'), t = num('w-t');
+  const svill = num('w-sv') || 0, rem = num('w-rem') || 0, losU = num('w-lu') || 0, losO = num('w-lo') || 0;
+  const op = readOpenings('w-wins', 'ww', 'w-on', 'panel-vegg');
+  const more = $('w-more');
+  const fail = msg => { more.hidden = true; setOut('w-out', null, null, msg); };
+  if (!(L > 0 && H > 0 && cc > 0 && t > 0)) return fail('Fyll inn lengde, høyde, c/c og stendertykkelse.');
+  if (cc < 100 || cc > 1200) return fail('c/c må være mellom 100 og 1200 mm.');
+  const w = calcWall(L, H, cc, t, svill, rem, op.wins, losU, losO);
+  if (!w) return fail('Sjekk tallene. Stenderen blir 0 mm eller kortere.');
+
+  const notes = [];
+  if (op.missing) notes.push({ kind: 'warn', text: 'Fyll inn alle mål for åpningene.' });
+  w.checks.forEach(c => { if (c.issues.length) notes.push({ kind: 'warn', text: 'Åpning ' + c.nr + ' ' + c.issues.join(' og ') + '.' }); });
+  if (w.hasDoor) notes.push({ kind: 'info', text: 'Døråpning: svillen kappes ut etter at veggen er reist.' });
+  if (losO > t) notes.push({ kind: 'info', text: 'Bærende overligger trenger opplegg. Bærestendere under overliggeren er ikke med i lista.' });
+
+  setOut('w-out', [
+    { label: 'Stenderlengde', value: F0.format(w.full), unit: 'mm', sub: F0.format(H) + ' − svill ' + F0.format(svill) + ' − rem ' + F0.format(rem), primary: true },
+    { label: 'Hele stendere', value: F0.format(w.nFull), unit: 'stk' },
+    { label: 'Karmstendere', value: F0.format(w.nKarm), unit: 'stk', sub: 'samme lengde' },
+    { label: 'Korte stendere ved åpninger', value: F0.format(w.nShort), unit: 'stk' },
+    { label: 'Stenderemne totalt', value: F1.format(w.lmStud + w.lmLos), unit: 'lm', sub: 'uten svinn' },
+    { label: 'Svill og rem', value: F1.format(w.lmPlate), unit: 'lm', sub: w.nSvill + ' svill + ' + w.nRem + ' rem à ' + F0.format(L) + ' mm' }
+  ], notes);
+
+  $('w-svg').innerHTML = wallSvg(L, H, t, w.studs, op.wins, svill, rem);
+
+  const list = $('w-list');
+  list.replaceChildren();
+  const lines = w.list.map(x => F0.format(x.count) + ' stk × ' + F0.format(x.len) + ' mm ' + wallKind[x.kind]);
+  if (w.nSvill) lines.push(w.nSvill + ' stk × ' + F0.format(L) + ' mm svill');
+  if (w.nRem) lines.push(w.nRem + ' stk × ' + F0.format(L) + ' mm rem');
+  lines.forEach(t => { const li = document.createElement('li'); li.textContent = t; list.append(li); });
+
+  const tb = $('w-rows');
+  tb.replaceChildren();
+  w.studs.forEach((s, i) => {
+    const tr = document.createElement('tr');
+    const txt = s.kind === 'cut'
+      ? s.pieces.map(p => F0.format(p.len) + ' ' + p.kind).join(' · ')
+      : (s.kind === 'karm' ? 'karm ' : '') + F0.format(w.full);
+    [F0.format(i + 1), F0.format(s.x) + ' mm', txt].forEach(v => {
+      const td = document.createElement('td');
+      td.textContent = v;
+      tr.append(td);
+    });
+    tb.append(tr);
+  });
+  more.hidden = false;
+
+  wallCopy = 'Precut vegg ' + F0.format(L) + ' × ' + F0.format(H) + ' mm, c/c ' + F0.format(cc) + '\n' +
+    lines.join('\n').replace(/ /g, ' ') + '\n' +
+    'Merker (venstre kant): ' + w.studs.map(s => Math.round(s.x)).join(', ');
+}
+
 function updateDivision(){
   if ($('panel-inndeling').dataset.mode === 'B') updateBalusters(); else updateCladding();
 }
@@ -1168,7 +1398,7 @@ async function copyText(text, btn){
 }
 
 /* ---------- Wiring ---------- */
-const updaters = { rektangel: updateRect, inndeling: updateDivision, tak: updateRoof, gavl: updateGable, trapp: updateStair, vinkel: function(){} };
+const updaters = { rektangel: updateRect, inndeling: updateDivision, vegg: updateWall, tak: updateRoof, gavl: updateGable, trapp: updateStair, vinkel: function(){} };
 
 /* Remember last values on this device */
 const STORE = 'meland-kalk-v1';
@@ -1250,12 +1480,13 @@ $('g-copy').addEventListener('click', e => copyText(gableCopy, e.currentTarget))
 $('s-copy').addEventListener('click', e => copyText(stairCopy, e.currentTarget));
 $('k-copy').addEventListener('click', e => copyText(claddingCopy, e.currentTarget));
 $('p-copy').addEventListener('click', e => copyText(balusterCopy, e.currentTarget));
+$('w-copy').addEventListener('click', e => copyText(wallCopy, e.currentTarget));
 $('reset').addEventListener('click', () => {
   try { localStorage.removeItem(STORE); } catch (e) {}
   location.reload();
 });
 
-const toolIds = ['rektangel', 'inndeling', 'gavl', 'tak', 'trapp', 'vinkel'];
+const toolIds = ['rektangel', 'inndeling', 'vegg', 'gavl', 'tak', 'trapp', 'vinkel'];
 function route(){
   const h = location.hash.replace('#', '');
   const id = toolIds.includes(h) ? h : 'rektangel';
@@ -1266,11 +1497,12 @@ function route(){
 }
 window.addEventListener('hashchange', route);
 
-buildWindowFields();
+buildWindowFields('g-wins', 'gw', WIN_DEFAULTS, 'Vindu');
+buildWindowFields('w-wins', 'ww', WALL_OPEN_DEFAULTS, 'Åpning', null);
 restore();
 document.querySelectorAll('.tool[data-mode]').forEach(applyMode);
 syncAngles('v-deg');
-updateRect(); updateDivision(); updateRoof(); updateGable(); updateStair();
+updateRect(); updateDivision(); updateWall(); updateRoof(); updateGable(); updateStair();
 route();
 
 // Offline use when installed from the published site
