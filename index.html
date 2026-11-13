@@ -6,6 +6,12 @@
 <meta name="color-scheme" content="light dark">
 <title>Meland Bygg Kalkulator</title>
 <meta name="claude:viewport-fit-sides" content="cover">
+<meta name="theme-color" content="#E14519">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icon-180.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Kalkulator">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
 <style>
 /* Layout: one narrow column like a folding rule. Brand colours from the Meland Bygg logo sheet (orange 1665, grey 424/421, black). Ruler strip under the logo, tool tabs, inputs on top, results as a measured list below. */
@@ -207,6 +213,36 @@ tr.peak td{font-weight:500;background:linear-gradient(transparent 20%, var(--hl)
 }
 .btn:hover{background:var(--accent);border-color:var(--accent);color:var(--on-accent)}
 .foot{margin-top:36px;padding-top:12px;border-top:1px solid var(--line);font-size:12px;color:var(--muted)}
+.linkbtn{appearance:none;border:0;background:none;padding:0;color:var(--ink);font:inherit;text-decoration:underline;cursor:pointer}
+
+/* Stepper (antall bord / spiler) */
+.stepper{display:flex;align-items:center;gap:12px;margin-top:18px}
+.stepper button{
+  appearance:none;width:64px;height:56px;border:0;border-radius:6px;
+  background:var(--accent);color:var(--on-accent);font:700 30px/1 var(--font-display);cursor:pointer;
+}
+.stepper button:focus-visible{outline:3px solid var(--ink);outline-offset:2px}
+.stepper .mid{flex:1;text-align:center}
+.stepper .lbl{display:block;font-size:12px;font-weight:600;letter-spacing:.07em;text-transform:uppercase;color:var(--muted)}
+.stepper .n{display:block;font:600 34px/1.1 var(--font-display)}
+.stepper .hint{display:block;font-size:12px;color:var(--muted)}
+
+/* Checkbox and window blocks */
+.check{display:flex;align-items:center;gap:10px;margin-top:20px;padding:12px;border:1.5px solid var(--ink);border-radius:4px;background:var(--panel);font-weight:600;cursor:pointer}
+.check input{width:24px;height:24px;accent-color:var(--accent);margin:0}
+.winbox{margin-top:12px;padding:12px;border:1.5px solid var(--line);border-radius:4px}
+.winbox .seg{margin-bottom:12px}
+.win-block{margin:14px 0 0;padding:0;border:0;border-top:1px solid var(--line);padding-top:10px}
+.win-block legend{padding:0;font:600 18px var(--font-display);margin-bottom:6px}
+details.more{margin-top:22px;border:1.5px solid var(--line);border-radius:4px;padding:0 12px}
+details.more summary{cursor:pointer;padding:12px 0;font-weight:600}
+details.more[open]{padding-bottom:12px}
+details.more .results{margin-top:12px}
+
+/* Drawing extras */
+.board-u{fill:var(--field);stroke:var(--ink);stroke-width:1}
+.board-o{fill:var(--accent);stroke:var(--ink);stroke-width:1;opacity:.85}
+.win{fill:var(--panel);stroke:var(--accent);stroke-width:2}
 @media (prefers-reduced-motion:reduce){*{scroll-behavior:auto!important;transition:none!important}}
 [hidden]{display:none!important}
 body{margin:0}
@@ -223,8 +259,9 @@ body{margin:0}
 
   <nav class="tabs" aria-label="Verktøy">
     <a class="tab" href="#rektangel" data-tab="rektangel">Flate og volum</a>
-    <a class="tab" href="#tak" data-tab="tak">Takvinkel</a>
+    <a class="tab" href="#inndeling" data-tab="inndeling">Kledning og spiler</a>
     <a class="tab" href="#gavl" data-tab="gavl">Gavlstendere</a>
+    <a class="tab" href="#tak" data-tab="tak">Takvinkel</a>
     <a class="tab" href="#trapp" data-tab="trapp">Trapp</a>
     <a class="tab" href="#vinkel" data-tab="vinkel">Vinkel</a>
   </nav>
@@ -239,6 +276,88 @@ body{margin:0}
       <div class="field"><label for="r-h">Høyde (valgfri)</label><div class="box"><input id="r-h" type="text" inputmode="decimal" autocomplete="off" value="2,5"><span class="suffix">m</span></div></div>
     </div>
     <div class="results" id="r-out" aria-live="polite"></div>
+  </section>
+
+  <!-- DIVISION: CLADDING AND BALUSTERS -->
+  <section class="tool" id="panel-inndeling" data-tool="inndeling" data-mode="A" hidden>
+    <h2>Kledning og spiler</h2>
+    <div class="seg" role="group" aria-label="Type inndeling">
+      <button type="button" data-mode="A" aria-pressed="true">Tømmermannskledning</button>
+      <button type="button" data-mode="B" aria-pressed="false">Spiler</button>
+    </div>
+
+    <!-- Cladding -->
+    <div data-show="A">
+      <p class="intro">Stående kledning med underligger i begge ender. Mål feltet vannrett der kledningen skal starte og slutte.</p>
+      <div class="fields">
+        <div class="field"><label for="k-w">Bredde på felt</label><div class="box"><input id="k-w" data-reset="k" type="text" inputmode="decimal" autocomplete="off" value="6000"><span class="suffix">mm</span></div></div>
+        <div class="field"><label for="k-b">Bordbredde</label><div class="box"><input id="k-b" data-reset="k" type="text" inputmode="decimal" autocomplete="off" value="148"><span class="suffix">mm</span></div></div>
+        <div class="field"><label for="k-o">Ønsket omlegg</label><div class="box"><input id="k-o" data-reset="k" type="text" inputmode="decimal" autocomplete="off" value="25"><span class="suffix">mm</span></div><p class="help">Minst bordtykkelsen, helst 20–25 mm.</p></div>
+      </div>
+      <div class="chips"><span class="lbl">Bord</span>
+        <button type="button" class="chip" data-set="k-b" data-value="98">98</button>
+        <button type="button" class="chip" data-set="k-b" data-value="123">123</button>
+        <button type="button" class="chip" data-set="k-b" data-value="148">148</button>
+        <button type="button" class="chip" data-set="k-b" data-value="173">173</button>
+        <button type="button" class="chip" data-set="k-b" data-value="198">198</button>
+      </div>
+      <div class="stepper">
+        <button type="button" data-step="k" data-dir="-1" aria-label="Ett bord færre på hver side">−</button>
+        <div class="mid"><span class="lbl">Antall bord</span><span class="n" id="k-n">–</span><span class="hint" id="k-hint"></span></div>
+        <button type="button" data-step="k" data-dir="1" aria-label="Flere bord">+</button>
+      </div>
+      <div class="results" id="k-out" aria-live="polite"></div>
+      <div id="k-more" hidden>
+        <figure class="figure"><div id="k-svg"></div><figcaption>Feltet sett forfra. Hvite bord er underliggere, oransje er overliggere.</figcaption></figure>
+        <h3 class="sect">Utdelingsmål fra venstre kant</h3>
+        <div class="table-wrap"><table>
+          <thead><tr><th>Nr</th><th>Underligger</th><th>Overligger</th></tr></thead>
+          <tbody id="k-rows"></tbody>
+        </table></div>
+        <button type="button" class="btn" id="k-copy">Kopier utdelingsmål</button>
+        <details class="more">
+          <summary>Materialer og spiker</summary>
+          <div class="fields">
+            <div class="field"><label for="k-h">Bordlengde</label><div class="box"><input id="k-h" type="text" inputmode="decimal" autocomplete="off" value="2400"><span class="suffix">mm</span></div><p class="help">Høyden på kledningen.</p></div>
+            <div class="field"><label for="k-svinn">Svinn</label><div class="box"><input id="k-svinn" type="text" inputmode="decimal" autocomplete="off" value="10"><span class="suffix">%</span></div></div>
+            <div class="field"><label for="k-cc">Lekter c/c</label><div class="box"><input id="k-cc" type="text" inputmode="decimal" autocomplete="off" value="600"><span class="suffix">mm</span></div></div>
+            <div class="field"><label for="k-sp">Spiker per bord per lekt</label><div class="box"><input id="k-sp" type="text" inputmode="decimal" autocomplete="off" value="1"><span class="suffix">stk</span></div><p class="help">Sjekk anvisningen for kledningen.</p></div>
+          </div>
+          <div class="results" id="k-mat" aria-live="polite"></div>
+        </details>
+      </div>
+    </div>
+
+    <!-- Balusters -->
+    <div data-show="B" hidden>
+      <p class="intro">Like store mellomrom mellom stolpene. Mål innvendig fra stolpe til stolpe.</p>
+      <div class="fields">
+        <div class="field"><label for="p-l">Mellom stolpene</label><div class="box"><input id="p-l" data-reset="p" type="text" inputmode="decimal" autocomplete="off" value="1700"><span class="suffix">mm</span></div></div>
+        <div class="field"><label for="p-w">Spilebredde</label><div class="box"><input id="p-w" data-reset="p" type="text" inputmode="decimal" autocomplete="off" value="48"><span class="suffix">mm</span></div></div>
+        <div class="field"><label for="p-g">Maks mellomrom</label><div class="box"><input id="p-g" data-reset="p" type="text" inputmode="decimal" autocomplete="off" value="100"><span class="suffix">mm</span></div><p class="help">Rekkverk: 100 mm.</p></div>
+        <div class="field"><label for="p-len">Spilelengde (valgfri)</label><div class="box"><input id="p-len" type="text" inputmode="decimal" autocomplete="off" value="900"><span class="suffix">mm</span></div></div>
+      </div>
+      <div class="chips"><span class="lbl">Spile</span>
+        <button type="button" class="chip" data-set="p-w" data-value="23">23</button>
+        <button type="button" class="chip" data-set="p-w" data-value="36">36</button>
+        <button type="button" class="chip" data-set="p-w" data-value="48">48</button>
+        <button type="button" class="chip" data-set="p-w" data-value="73">73</button>
+      </div>
+      <div class="stepper">
+        <button type="button" data-step="p" data-dir="-1" aria-label="Én spile færre">−</button>
+        <div class="mid"><span class="lbl">Antall spiler</span><span class="n" id="p-n">–</span><span class="hint" id="p-hint"></span></div>
+        <button type="button" data-step="p" data-dir="1" aria-label="Én spile flere">+</button>
+      </div>
+      <div class="results" id="p-out" aria-live="polite"></div>
+      <div id="p-more" hidden>
+        <h3 class="sect">Utdelingsmål fra venstre stolpe</h3>
+        <div class="table-wrap"><table>
+          <thead><tr><th>Nr</th><th>Venstre kant</th><th>Senter</th></tr></thead>
+          <tbody id="p-rows"></tbody>
+        </table></div>
+        <button type="button" class="btn" id="p-copy">Kopier utdelingsmål</button>
+      </div>
+    </div>
   </section>
 
   <!-- ROOF -->
@@ -261,7 +380,7 @@ body{margin:0}
   </section>
 
   <!-- GABLE STUDS -->
-  <section class="tool" id="panel-gavl" data-tool="gavl" hidden>
+  <section class="tool" id="panel-gavl" data-tool="gavl" data-mode="A" hidden>
     <h2>Gavlstendere</h2>
     <p class="intro">Lengde på hver stender i en gavlvegg. Første stender står i venstre hjørne, resten på valgt c/c.</p>
     <div class="fields">
@@ -269,16 +388,37 @@ body{margin:0}
       <div class="field"><label for="g-a">Takvinkel</label><div class="box"><input id="g-a" type="text" inputmode="decimal" autocomplete="off" value="27"><span class="suffix">°</span></div></div>
       <div class="field"><label for="g-cc">c/c</label><div class="box"><input id="g-cc" type="text" inputmode="decimal" autocomplete="off" value="600"><span class="suffix">mm</span></div></div>
       <div class="field"><label for="g-h">Høyde ved gesims</label><div class="box"><input id="g-h" type="text" inputmode="decimal" autocomplete="off" value="2500"><span class="suffix">mm</span></div><p class="help">Kortest stender, ytterst på veggen.</p></div>
-      <div class="field"><label for="g-cut">Fradrag svill og rem</label><div class="box"><input id="g-cut" type="text" inputmode="decimal" autocomplete="off" value="0"><span class="suffix">mm</span></div><p class="help">Trekkes fra hver stender.</p></div>
+      <div class="field"><label for="g-sv">Svill</label><div class="box"><input id="g-sv" type="text" inputmode="decimal" autocomplete="off" value="0"><span class="suffix">mm</span></div><p class="help">Trekkes fra hver stender.</p></div>
+      <div class="field"><label for="g-rem">Rem</label><div class="box"><input id="g-rem" type="text" inputmode="decimal" autocomplete="off" value="0"><span class="suffix">mm</span></div><p class="help">Trekkes fra hver stender.</p></div>
     </div>
     <div class="chips"><span class="lbl">c/c</span>
       <button type="button" class="chip" data-set="g-cc" data-value="300">300</button>
       <button type="button" class="chip" data-set="g-cc" data-value="450">450</button>
       <button type="button" class="chip" data-set="g-cc" data-value="600">600</button>
     </div>
+    <label class="check"><input type="checkbox" id="g-win"> Vindu i veggen</label>
+    <div class="winbox" id="g-winbox" hidden>
+      <div class="seg" role="group" aria-label="Høyde på vindu oppgis som">
+        <button type="button" data-mode="A" aria-pressed="true">Brystningshøyde</button>
+        <button type="button" data-mode="B" aria-pressed="false">Overkant vindu</button>
+      </div>
+      <div class="fields">
+        <div class="field"><label for="g-wn">Antall vinduer</label><div class="box"><input id="g-wn" type="text" inputmode="numeric" autocomplete="off" value="1"><span class="suffix">stk</span></div></div>
+        <div class="field"><label for="g-lu">Losholt under</label><div class="box"><input id="g-lu" type="text" inputmode="decimal" autocomplete="off" value="48"><span class="suffix">mm</span></div></div>
+        <div class="field"><label for="g-lo">Losholt over</label><div class="box"><input id="g-lo" type="text" inputmode="decimal" autocomplete="off" value="48"><span class="suffix">mm</span></div><p class="help">Høyere ved bærende overligger.</p></div>
+      </div>
+      <div class="chips"><span class="lbl">Vinduer</span>
+        <button type="button" class="chip" data-set="g-wn" data-value="1">1</button>
+        <button type="button" class="chip" data-set="g-wn" data-value="2">2</button>
+        <button type="button" class="chip" data-set="g-wn" data-value="3">3</button>
+        <button type="button" class="chip" data-set="g-wn" data-value="4">4</button>
+      </div>
+      <p class="help" style="margin-top:12px">Bruk mål på råhullet. Høyder måles fra underkant svill, samme som høyden ved gesims. Avstand måles fra venstre hjørne til venstre kant av hullet.</p>
+      <div id="g-wins"></div>
+    </div>
     <div class="results" id="g-out" aria-live="polite"></div>
     <div id="g-more" hidden>
-      <figure class="figure"><div id="g-svg"></div><figcaption>Gavlen sett utenfra, tegnet i målestokk.</figcaption></figure>
+      <figure class="figure"><div id="g-svg"></div><figcaption>Gavlen sett utenfra, tegnet i målestokk. Vinduer er markert i oransje.</figcaption></figure>
       <h3 class="sect">Kappliste</h3>
       <ul class="cutlist" id="g-list"></ul>
       <h3 class="sect">Alle stendere fra venstre</h3>
@@ -333,7 +473,7 @@ body{margin:0}
     <p class="note" style="margin-top:18px">Forhold 1 : x betyr x meter vannrett for hver meter opp. Stigning per meter er hvor mange mm taket stiger per meter vannrett.</p>
   </section>
 
-  <p class="foot">Tallene som står i feltene er eksempler. Bytt dem med egne mål. Kontrollmål alltid på byggeplassen.</p>
+  <p class="foot">Appen husker de siste målene du la inn på denne telefonen. Kontrollmål alltid på byggeplassen. <button type="button" class="linkbtn" id="reset">Tilbakestill til eksempeltall</button></p>
 </div>
 
 <script>
@@ -363,21 +503,100 @@ function calcRoofAngle(B, angleDeg, ohMm){
   return { angle: angleDeg, len, rise: half * Math.tan(a), percent: 100 * Math.tan(a), lenOh: len + (ohMm || 0) / 1000 / Math.cos(a) };
 }
 
-function calcGable(Bm, angleDeg, cc, base, cut){
+/* Gable studs. wins: [{x, w, bottom, top}] in mm from left corner / underside of sill.
+   A stud whose position lies inside a window opening is split into pieces
+   below, between and above the openings. */
+function calcGable(Bm, angleDeg, cc, base, svill, rem, wins, losU, losO){
   if (!(Bm > 0) || !(angleDeg > 0) || !(angleDeg < 85) || !(cc >= 100) || !(base >= 0)) return null;
+  svill = svill || 0; rem = rem || 0; wins = wins || []; losU = losU || 0; losO = losO || 0;
   const Bmm = Bm * 1000, t = Math.tan(rad(angleDeg));
+  const roofAt = x => base + Math.min(x, Bmm - x) * t;
   const xs = [];
   for (let i = 0; i * cc < Bmm - 0.5 && i < 400; i++) xs.push(i * cc);
   xs.push(Bmm);
   const rows = xs.map((x, i) => {
-    const roofH = base + Math.min(x, Bmm - x) * t;
-    return { nr: i + 1, x, roofH, len: roofH - cut };
+    const roofH = roofAt(x);
+    const full = roofH - svill - rem;
+    const hit = wins.filter(w => x > w.x + 0.5 && x < w.x + w.w - 0.5).sort((a, b) => a.bottom - b.bottom);
+    if (!hit.length) return { nr: i + 1, x, roofH, len: full, pieces: null };
+    const pieces = [];
+    let from = svill, fromIsSill = true;
+    hit.forEach(w => {
+      pieces.push({ kind: fromIsSill ? 'under' : 'mellom', len: w.bottom - losU - from });
+      from = w.top + losO; fromIsSill = false;
+    });
+    pieces.push({ kind: 'over', len: roofH - rem - from });
+    return { nr: i + 1, x, roofH, len: full, pieces: pieces.filter(p => p.len > 0.5), bad: pieces.some(p => p.len <= 0.5 && p.kind !== 'over') };
   });
+
   const groups = new Map();
-  rows.forEach(r => { const k = Math.round(r.len); groups.set(k, (groups.get(k) || 0) + 1); });
-  const list = [...groups.entries()].sort((a, b) => a[0] - b[0]).map(([len, count]) => ({ len, count }));
-  const lens = rows.map(r => r.len);
-  return { step: cc * t, rows, list, count: rows.length, min: Math.min(...lens), max: Math.max(...lens), peakH: base + (Bmm / 2) * t, ridgeStud: Math.abs(Bmm / 2 / cc - Math.round(Bmm / 2 / cc)) < 1e-9 };
+  const add = (kind, len) => { const k = kind + '|' + Math.round(len); groups.set(k, (groups.get(k) || 0) + 1); };
+  rows.forEach(r => { if (r.pieces) r.pieces.forEach(p => add(p.kind, p.len)); else add('full', r.len); });
+  const order = { full: 0, under: 1, mellom: 2, over: 3 };
+  const list = [...groups.entries()].map(([k, count]) => {
+    const [kind, len] = k.split('|');
+    return { kind, len: Number(len), count };
+  }).sort((a, b) => order[a.kind] - order[b.kind] || a.len - b.len);
+
+  const winChecks = wins.map((w, i) => {
+    const issues = [];
+    if (w.x < 0 || w.x + w.w > Bmm) issues.push('går utenfor veggen');
+    else if (w.top + losO > Math.min(roofAt(w.x), roofAt(w.x + w.w)) - rem) issues.push('går opp i takflaten');
+    if (w.bottom - losU - svill <= 0) issues.push('står for lavt');
+    return { nr: i + 1, issues };
+  });
+
+  const fulls = rows.map(r => r.len);
+  return {
+    step: cc * t, rows, list, count: rows.length,
+    min: Math.min(...fulls), max: Math.max(...fulls),
+    peakH: base + (Bmm / 2) * t,
+    ridgeStud: Math.abs(Bmm / 2 / cc - Math.round(Bmm / 2 / cc)) < 1e-9,
+    cutStuds: rows.filter(r => r.pieces).length,
+    winChecks, roofAt
+  };
+}
+
+/* Board-on-board cladding (tømmermannskledning), method from NDLA:
+   ideal cover = 2b - 2o, reduced length = W - b, n = ceil(reduced / ideal),
+   adjusted cover = reduced / n, adjusted overlap = (2b - cover) / 2.
+   adj lets the user add or remove cover units (2 boards each). */
+function calcCladding(W, b, o, adj){
+  if (!(W > 0) || !(b > 0) || !(o >= 0) || W <= b) return null;
+  const ideal = 2 * b - 2 * o;
+  if (!(ideal > b)) return { err: 'omlegg' };
+  const red = W - b;
+  const suggested = Math.max(1, Math.ceil(red / ideal - 1e-9));
+  const n = Math.max(1, suggested + (adj || 0));
+  const D = red / n;
+  const overlap = (2 * b - D) / 2;
+  const under = [], over = [];
+  for (let i = 0; i <= n; i++) under.push(i * D);
+  for (let i = 0; i < n; i++) over.push(i * D + b - overlap);
+  return { ideal, suggested, n, D, overlap, gap: D - b, under, over, nUnder: n + 1, nOver: n, boards: 2 * n + 1, suggestedBoards: 2 * suggested + 1 };
+}
+
+function calcCladdingMaterial(boards, lenMm, wastePct, battCc, nailsPer){
+  if (!(lenMm > 0)) return null;
+  const w = 1 + Math.max(0, wastePct || 0) / 100;
+  const rowsBatt = battCc > 0 ? Math.ceil(lenMm / battCc - 1e-9) + 1 : null;
+  return {
+    lm: boards * lenMm / 1000,
+    lmWaste: boards * lenMm / 1000 * w,
+    rowsBatt,
+    nails: rowsBatt && nailsPer > 0 ? Math.ceil(boards * rowsBatt * nailsPer * w) : null
+  };
+}
+
+/* Balusters between two posts with equal gaps on both ends. */
+function calcBalusters(L, w, maxGap, adj){
+  if (!(L > 0) || !(w > 0) || !(maxGap > 0) || L <= w) return null;
+  const suggested = Math.max(1, Math.ceil((L - maxGap) / (w + maxGap) - 1e-9));
+  const n = Math.max(1, suggested + (adj || 0));
+  const gap = (L - n * w) / (n + 1);
+  const lefts = [];
+  for (let i = 0; i < n; i++) lefts.push(gap + i * (w + gap));
+  return { suggested, n, gap, cc: w + gap, lefts, centers: lefts.map(x => x + w / 2) };
 }
 
 function stairFrom(H, n, f, runGiven){
@@ -560,25 +779,84 @@ function updateRoof(){
 }
 
 /* ---------- Gable studs ---------- */
-function gableSvg(Bmm, base, t, rows, peakH){
+function gableSvg(Bmm, base, rows, peakH, wins){
   const W = 320, Hh = 172, bottom = 158, maxW = 300, maxH = 140;
   const s = Math.min(maxW / Bmm, maxH / peakH);
   const w = Bmm * s, left = (W - w) / 2, cx = W / 2;
   const eaveY = bottom - base * s, ridgeY = bottom - peakH * s;
+  const winRects = wins.map(v =>
+    `<rect class="win" x="${left + v.x * s}" y="${bottom - v.top * s}" width="${v.w * s}" height="${(v.top - v.bottom) * s}"/>`
+  ).join('');
   const studs = rows.map(r => {
     const x = left + r.x * s;
-    return `<line class="stud" x1="${x}" y1="${bottom}" x2="${x}" y2="${bottom - r.roofH * s}"/>`;
+    const hit = wins.filter(v => r.x > v.x + 0.5 && r.x < v.x + v.w - 0.5).sort((a, b) => a.bottom - b.bottom);
+    if (!hit.length) return `<line class="stud" x1="${x}" y1="${bottom}" x2="${x}" y2="${bottom - r.roofH * s}"/>`;
+    let from = 0, out = '';
+    hit.forEach(v => { if (v.bottom > from) out += `<line class="stud" x1="${x}" y1="${bottom - from * s}" x2="${x}" y2="${bottom - v.bottom * s}"/>`; from = v.top; });
+    if (r.roofH > from) out += `<line class="stud" x1="${x}" y1="${bottom - from * s}" x2="${x}" y2="${bottom - r.roofH * s}"/>`;
+    return out;
   }).join('');
   return `<svg viewBox="0 0 ${W} ${Hh}" role="img" aria-label="Gavlvegg med stendere">
     <polygon class="shape" points="${left},${bottom} ${left},${eaveY} ${cx},${ridgeY} ${left + w},${eaveY} ${left + w},${bottom}"/>
+    ${winRects}
     ${studs}
     <line class="ground" x1="10" y1="${bottom}" x2="${W - 10}" y2="${bottom}"/>
   </svg>`;
 }
 
+const WIN_MAX = 4;
+const WIN_DEFAULTS = [
+  { w: 1000, h: 1200, x: 2500, y: 900 },
+  { w: 1000, h: 1200, x: 600, y: 900 },
+  { w: 1000, h: 1200, x: 4400, y: 900 },
+  { w: 600, h: 600, x: 2700, y: 2500 }
+];
+function buildWindowFields(){
+  const host = $('g-wins');
+  WIN_DEFAULTS.forEach((d, i) => {
+    const n = i + 1;
+    const fs = document.createElement('fieldset');
+    fs.className = 'win-block';
+    fs.dataset.win = String(n);
+    fs.innerHTML =
+      `<legend>Vindu ${n}</legend><div class="fields">` +
+      `<div class="field"><label for="gw${n}-w">Bredde</label><div class="box"><input id="gw${n}-w" type="text" inputmode="decimal" autocomplete="off" value="${d.w}"><span class="suffix">mm</span></div></div>` +
+      `<div class="field"><label for="gw${n}-h">Høyde</label><div class="box"><input id="gw${n}-h" type="text" inputmode="decimal" autocomplete="off" value="${d.h}"><span class="suffix">mm</span></div></div>` +
+      `<div class="field"><label for="gw${n}-x">Fra venstre hjørne</label><div class="box"><input id="gw${n}-x" type="text" inputmode="decimal" autocomplete="off" value="${d.x}"><span class="suffix">mm</span></div></div>` +
+      `<div class="field"><label for="gw${n}-y"><span data-show="A">Brystningshøyde</span><span data-show="B" hidden>Overkant vindu</span></label><div class="box"><input id="gw${n}-y" type="text" inputmode="decimal" autocomplete="off" value="${d.y}"><span class="suffix">mm</span></div></div>` +
+      `</div>`;
+    host.append(fs);
+  });
+}
+
+function readWindows(){
+  const on = $('g-win').checked;
+  $('g-winbox').hidden = !on;
+  if (!on) return { wins: [], missing: false };
+  let count = Math.round(num('g-wn') || 0);
+  count = Math.min(WIN_MAX, Math.max(0, count));
+  const fromTop = $('panel-gavl').dataset.mode === 'B';
+  const wins = [];
+  let missing = false;
+  document.querySelectorAll('#g-wins .win-block').forEach(fs => {
+    const n = Number(fs.dataset.win);
+    fs.hidden = n > count;
+    if (n > count) return;
+    const w = num('gw' + n + '-w'), h = num('gw' + n + '-h'), x = num('gw' + n + '-x'), y = num('gw' + n + '-y');
+    if (!(w > 0 && h > 0 && x != null && y != null)) { missing = true; return; }
+    const bottom = fromTop ? y - h : y;
+    wins.push({ nr: n, x, w, h, bottom, top: bottom + h });
+  });
+  return { wins, missing };
+}
+
+const kindText = { full: '', under: ' under vindu', mellom: ' mellom vinduer', over: ' over vindu' };
+
 let gableCopy = '';
 function updateGable(){
-  const B = num('g-b'), a = num('g-a'), cc = num('g-cc'), base = num('g-h'), cut = num('g-cut') || 0;
+  const B = num('g-b'), a = num('g-a'), cc = num('g-cc'), base = num('g-h');
+  const svill = num('g-sv') || 0, rem = num('g-rem') || 0;
+  const win = readWindows();
   const more = $('g-more');
   if (!(B > 0 && a > 0 && cc != null && base != null)){
     more.hidden = true;
@@ -588,37 +866,52 @@ function updateGable(){
     more.hidden = true;
     return setOut('g-out', null, null, 'Takvinkel må være under 85 grader, og c/c mellom 100 og 1200 mm.');
   }
-  const g = calcGable(B, a, cc, base, cut);
+  const losU = num('g-lu') || 0, losO = num('g-lo') || 0;
+  const g = calcGable(B, a, cc, base, svill, rem, win.wins, losU, losO);
   if (!g){
     more.hidden = true;
     return setOut('g-out', null, null, 'Sjekk tallene du har lagt inn.');
   }
-  const notes = [{ kind: 'info', text: 'Lengdene er målt til takflaten. Bruk Fradrag for svill og rem.' }];
-  if (g.min <= 0) notes.unshift({ kind: 'warn', text: 'Kortest stender blir 0 mm eller mindre. Sjekk høyde ved gesims og fradrag.' });
-  setOut('g-out', [
+  const notes = [{ kind: 'info', text: 'Lengdene er målt til takflaten, minus svill og rem.' }];
+  if (g.min <= 0) notes.unshift({ kind: 'warn', text: 'Kortest stender blir 0 mm eller mindre. Sjekk høyde ved gesims, svill og rem.' });
+  if (win.missing) notes.unshift({ kind: 'warn', text: 'Fyll inn alle mål for vinduene.' });
+  g.winChecks.forEach((c, i) => {
+    if (c.issues.length) notes.unshift({ kind: 'warn', text: 'Vindu ' + win.wins[i].nr + ' ' + c.issues.join(' og ') + '.' });
+  });
+  if (win.wins.length){
+    notes.push({ kind: 'info', text: 'Stendere inntil hullet (karmstendere) og eventuell bærende overligger er ikke med i lista. Sjekk at ingen stender står så tett inntil hullet at den er i veien.' });
+  }
+  const rows = [
     { label: 'Hver stender øker med', value: F1.format(g.step), unit: 'mm', sub: 'c/c ' + F0.format(cc) + ' × tan ' + F0.format(a) + '°', primary: true },
     { label: 'Antall stendere', value: F0.format(g.count), unit: 'stk' },
     { label: 'Kortest', value: F0.format(g.min), unit: 'mm' },
     { label: g.ridgeStud ? 'Lengst (under møne)' : 'Lengst', value: F0.format(g.max), unit: 'mm' },
     { label: 'Mønehøyde fra bunn', value: F0.format(g.peakH), unit: 'mm' }
-  ], notes);
+  ];
+  if (win.wins.length) rows.splice(2, 0, { label: 'Kappet ved vindu', value: F0.format(g.cutStuds), unit: 'stk', sub: 'deles i stender under og over' });
+  setOut('g-out', rows, notes);
 
-  $('g-svg').innerHTML = gableSvg(B * 1000, base, Math.tan(rad(a)), g.rows, g.peakH);
+  $('g-svg').innerHTML = gableSvg(B * 1000, base, g.rows, g.peakH, win.wins);
 
+  const losholt = win.wins.map(v => ({ text: '2 stk × ' + F0.format(v.w) + ' mm losholt (vindu ' + v.nr + ')', copy: '2 stk × ' + Math.round(v.w) + ' mm losholt (vindu ' + v.nr + ')' }));
   const list = $('g-list');
   list.replaceChildren();
   g.list.forEach(x => {
     const li = document.createElement('li');
-    li.textContent = F0.format(x.count) + ' stk × ' + F0.format(x.len) + ' mm';
+    li.textContent = F0.format(x.count) + ' stk × ' + F0.format(x.len) + ' mm' + kindText[x.kind];
     list.append(li);
   });
+  losholt.forEach(l => { const li = document.createElement('li'); li.textContent = l.text; list.append(li); });
 
   const tb = $('g-rows');
   tb.replaceChildren();
   g.rows.forEach(r => {
     const tr = document.createElement('tr');
-    if (Math.abs(r.len - g.max) < 0.5) tr.className = 'peak';
-    [F0.format(r.nr), F0.format(r.x) + ' mm', F0.format(r.len) + ' mm'].forEach(t => {
+    if (!r.pieces && Math.abs(r.len - g.max) < 0.5) tr.className = 'peak';
+    const lenText = r.pieces
+      ? r.pieces.map(p => F0.format(p.len) + ' ' + (p.kind === 'under' ? 'under' : p.kind === 'over' ? 'over' : 'mellom')).join(' · ')
+      : F0.format(r.len) + ' mm';
+    [F0.format(r.nr), F0.format(r.x) + ' mm', lenText].forEach(t => {
       const td = document.createElement('td');
       td.textContent = t;
       tr.append(td);
@@ -629,7 +922,134 @@ function updateGable(){
 
   gableCopy = 'Gavlstendere, bredde ' + F2.format(B) + ' m, ' + F1.format(a) + '°, c/c ' + F0.format(cc) + ' mm\n' +
     'Økning per stender: ' + F1.format(g.step) + ' mm\n' +
-    g.list.map(x => x.count + ' stk × ' + Math.round(x.len) + ' mm').join('\n');
+    g.list.map(x => x.count + ' stk × ' + Math.round(x.len) + ' mm' + kindText[x.kind]).join('\n') +
+    (losholt.length ? '\n' + losholt.map(l => l.copy).join('\n') : '');
+}
+
+/* ---------- Cladding and balusters ---------- */
+const adj = { k: 0, p: 0 };
+
+function claddingSvg(W, b, c){
+  const VW = 320, VH = 120, pad = 10;
+  const s = (VW - 2 * pad) / W;
+  const h = 90, top = 15;
+  const u = c.under.map(x => `<rect class="board-u" x="${pad + x * s}" y="${top}" width="${b * s}" height="${h}"/>`).join('');
+  const o = c.over.map(x => `<rect class="board-o" x="${pad + x * s}" y="${top}" width="${b * s}" height="${h}"/>`).join('');
+  return `<svg viewBox="0 0 ${VW} ${VH}" role="img" aria-label="Kledningsfelt med underliggere og overliggere">
+    ${u}${o}
+    <line class="ground" x1="${pad}" y1="${top + h + 1}" x2="${VW - pad}" y2="${top + h + 1}"/>
+  </svg>`;
+}
+
+let claddingCopy = '';
+function updateCladding(){
+  const W = num('k-w'), b = num('k-b'), o = num('k-o');
+  const more = $('k-more');
+  const fail = msg => { more.hidden = true; $('k-n').textContent = '–'; $('k-hint').textContent = ''; setOut('k-out', null, null, msg); };
+  if (!(W > 0 && b > 0 && o != null)) return fail('Fyll inn bredde på felt, bordbredde og omlegg.');
+  const c = calcCladding(W, b, o, adj.k);
+  if (!c || c.err) return fail(c && c.err ? 'Omlegget er for stort for denne bordbredden.' : 'Feltet må være bredere enn ett bord.');
+  if (c.gap <= 0){
+    $('k-n').textContent = F0.format(c.boards);
+    $('k-hint').textContent = 'Forslag: ' + F0.format(c.suggestedBoards) + ' bord';
+    more.hidden = true;
+    return setOut('k-out', null, null, 'For mange bord. Underliggerne går inn i hverandre. Trykk −.');
+  }
+  $('k-n').textContent = F0.format(c.boards);
+  $('k-hint').textContent = adj.k ? 'Forslag: ' + F0.format(c.suggestedBoards) + ' bord' : 'Foreslått antall';
+
+  const notes = [];
+  if (c.overlap < 19) notes.push({ kind: 'warn', text: 'Omlegget er mindre enn tykkelsen på vanlig kledning (19 mm). Trykk + for flere bord.' });
+  else if (c.overlap > 35) notes.push({ kind: 'warn', text: 'Stort omlegg. Trykk − hvis du vil ha færre bord.' });
+  else notes.push({ kind: 'ok', text: 'Omlegget er innenfor 19–35 mm.' });
+
+  setOut('k-out', [
+    { label: 'Omlegg', value: F1.format(c.overlap), unit: 'mm', sub: 'ønsket ' + F0.format(o) + ' mm', primary: true },
+    { label: 'Dekningsmål (c/c underligger)', value: F1.format(c.D), unit: 'mm' },
+    { label: 'Mellomrom mellom underliggere', value: F1.format(c.gap), unit: 'mm' },
+    { label: 'Underliggere', value: F0.format(c.nUnder), unit: 'stk' },
+    { label: 'Overliggere', value: F0.format(c.nOver), unit: 'stk' }
+  ], notes);
+
+  $('k-svg').innerHTML = claddingSvg(W, b, c);
+
+  const tb = $('k-rows');
+  tb.replaceChildren();
+  c.under.forEach((x, i) => {
+    const tr = document.createElement('tr');
+    [F0.format(i + 1), F1.format(x) + ' mm', i < c.over.length ? F1.format(c.over[i]) + ' mm' : '–'].forEach(t => {
+      const td = document.createElement('td');
+      td.textContent = t;
+      tr.append(td);
+    });
+    tb.append(tr);
+  });
+  more.hidden = false;
+
+  // Materials
+  const m = calcCladdingMaterial(c.boards, num('k-h'), num('k-svinn'), num('k-cc'), num('k-sp'));
+  if (!m) setOut('k-mat', null, null, 'Legg inn bordlengde for å regne materialer.');
+  else {
+    const per = (cnt) => F1.format(cnt * num('k-h') / 1000 * (1 + Math.max(0, num('k-svinn') || 0) / 100));
+    const rows = [
+      { label: 'Kledning totalt med svinn', value: F1.format(m.lmWaste), unit: 'lm', sub: F1.format(m.lm) + ' lm uten svinn', primary: true },
+      { label: 'Underliggere', value: per(c.nUnder), unit: 'lm', sub: c.nUnder + ' stk × ' + F0.format(num('k-h')) + ' mm' },
+      { label: 'Overliggere', value: per(c.nOver), unit: 'lm', sub: c.nOver + ' stk × ' + F0.format(num('k-h')) + ' mm' }
+    ];
+    if (m.rowsBatt) rows.push({ label: 'Lekterader', value: F0.format(m.rowsBatt), unit: 'stk', sub: F1.format(m.rowsBatt * W / 1000) + ' lm lekt' });
+    if (m.nails) rows.push({ label: 'Spiker med svinn', value: F0.format(m.nails), unit: 'stk' });
+    setOut('k-mat', rows, null);
+  }
+
+  claddingCopy = 'Tømmermannskledning, felt ' + F0.format(W) + ' mm, bord ' + F0.format(b) + ' mm\n' +
+    'Omlegg ' + F1.format(c.overlap) + ' mm, dekningsmål ' + F1.format(c.D) + ' mm\n' +
+    c.nUnder + ' underliggere, ' + c.nOver + ' overliggere\n' +
+    'Underligger venstre kant: ' + c.under.map(x => plain(x, 0)).join(', ') + '\n' +
+    'Overligger venstre kant: ' + c.over.map(x => plain(x, 0)).join(', ') +
+    (m ? '\nKledning ' + plain(m.lmWaste, 1) + ' lm med svinn' + (m.nails ? ', spiker ' + m.nails + ' stk' : '') : '');
+}
+
+let balusterCopy = '';
+function updateBalusters(){
+  const L = num('p-l'), w = num('p-w'), g = num('p-g'), len = num('p-len');
+  const more = $('p-more');
+  const fail = msg => { more.hidden = true; $('p-n').textContent = '–'; $('p-hint').textContent = ''; setOut('p-out', null, null, msg); };
+  if (!(L > 0 && w > 0 && g > 0)) return fail('Fyll inn mål mellom stolpene, spilebredde og maks mellomrom.');
+  const p = calcBalusters(L, w, g, adj.p);
+  if (!p) return fail('Avstanden må være større enn én spile.');
+  $('p-n').textContent = F0.format(p.n);
+  $('p-hint').textContent = adj.p ? 'Forslag: ' + F0.format(p.suggested) + ' spiler' : 'Foreslått antall';
+  if (p.gap <= 0){ more.hidden = true; return setOut('p-out', null, null, 'For mange spiler. Trykk −.'); }
+  const notes = p.gap > g
+    ? [{ kind: 'warn', text: 'Mellomrommet er større enn ' + F0.format(g) + ' mm. Trykk + for flere spiler.' }]
+    : [{ kind: 'ok', text: 'Mellomrommet er innenfor ' + F0.format(g) + ' mm.' }];
+  const rows = [
+    { label: 'Mellomrom', value: F1.format(p.gap), unit: 'mm', primary: true },
+    { label: 'Antall spiler', value: F0.format(p.n), unit: 'stk' },
+    { label: 'c/c spiler', value: F1.format(p.cc), unit: 'mm' }
+  ];
+  if (len > 0) rows.push({ label: 'Spiler totalt', value: F2.format(p.n * len / 1000), unit: 'lm', sub: p.n + ' stk × ' + F0.format(len) + ' mm' });
+  setOut('p-out', rows, notes);
+
+  const tb = $('p-rows');
+  tb.replaceChildren();
+  p.lefts.forEach((x, i) => {
+    const tr = document.createElement('tr');
+    [F0.format(i + 1), F1.format(x) + ' mm', F1.format(p.centers[i]) + ' mm'].forEach(t => {
+      const td = document.createElement('td');
+      td.textContent = t;
+      tr.append(td);
+    });
+    tb.append(tr);
+  });
+  more.hidden = false;
+  balusterCopy = 'Spiler, ' + F0.format(L) + ' mm mellom stolpene, spile ' + F0.format(w) + ' mm\n' +
+    p.n + ' spiler, mellomrom ' + F1.format(p.gap) + ' mm, c/c ' + F1.format(p.cc) + ' mm\n' +
+    'Venstre kant: ' + p.lefts.map(x => plain(x, 0)).join(', ');
+}
+
+function updateDivision(){
+  if ($('panel-inndeling').dataset.mode === 'B') updateBalusters(); else updateCladding();
 }
 
 /* ---------- Stairs ---------- */
@@ -748,17 +1168,54 @@ async function copyText(text, btn){
 }
 
 /* ---------- Wiring ---------- */
-const updaters = { rektangel: updateRect, tak: updateRoof, gavl: updateGable, trapp: updateStair, vinkel: function(){} };
+const updaters = { rektangel: updateRect, inndeling: updateDivision, tak: updateRoof, gavl: updateGable, trapp: updateStair, vinkel: function(){} };
 
-document.addEventListener('input', e => {
-  const t = e.target;
-  if (!t.matches || !t.matches('input')) return;
-  if (angleFields[t.id]) { syncAngles(t.id); return; }
+/* Remember last values on this device */
+const STORE = 'meland-kalk-v1';
+function save(){
+  try {
+    const d = { v: {}, modes: {} };
+    document.querySelectorAll('.tool input[id]').forEach(i => { d.v[i.id] = i.type === 'checkbox' ? i.checked : i.value; });
+    document.querySelectorAll('.tool[data-mode]').forEach(p => { d.modes[p.id] = p.dataset.mode; });
+    localStorage.setItem(STORE, JSON.stringify(d));
+  } catch (e) {}
+}
+function restore(){
+  try {
+    const d = JSON.parse(localStorage.getItem(STORE) || 'null');
+    if (!d) return;
+    Object.keys(d.v || {}).forEach(id => {
+      const el = $(id);
+      if (!el) return;
+      if (el.type === 'checkbox') el.checked = !!d.v[id]; else el.value = d.v[id];
+    });
+    Object.keys(d.modes || {}).forEach(id => { const p = $(id); if (p) p.dataset.mode = d.modes[id]; });
+  } catch (e) {}
+}
+
+function onField(t){
+  if (angleFields[t.id]) { syncAngles(t.id); save(); return; }
+  if (t.dataset.reset) adj[t.dataset.reset] = 0;
   const panel = t.closest('.tool');
   if (panel && updaters[panel.dataset.tool]) updaters[panel.dataset.tool]();
+  save();
+}
+document.addEventListener('input', e => {
+  const t = e.target;
+  if (!t.matches || !t.matches('input') || t.type === 'checkbox') return;
+  onField(t);
+});
+document.addEventListener('change', e => {
+  if (e.target.matches && e.target.matches('input[type="checkbox"]')) onField(e.target);
 });
 
 document.addEventListener('click', e => {
+  const step = e.target.closest('[data-step]');
+  if (step){
+    adj[step.dataset.step] += Number(step.dataset.dir);
+    updateDivision();
+    return;
+  }
   const chip = e.target.closest('.chip');
   if (chip){
     const input = $(chip.dataset.set);
@@ -779,6 +1236,7 @@ document.addEventListener('click', e => {
     panel.dataset.mode = seg.dataset.mode;
     applyMode(panel);
     updaters[panel.dataset.tool]();
+    save();
   }
 });
 
@@ -790,8 +1248,14 @@ function applyMode(panel){
 
 $('g-copy').addEventListener('click', e => copyText(gableCopy, e.currentTarget));
 $('s-copy').addEventListener('click', e => copyText(stairCopy, e.currentTarget));
+$('k-copy').addEventListener('click', e => copyText(claddingCopy, e.currentTarget));
+$('p-copy').addEventListener('click', e => copyText(balusterCopy, e.currentTarget));
+$('reset').addEventListener('click', () => {
+  try { localStorage.removeItem(STORE); } catch (e) {}
+  location.reload();
+});
 
-const toolIds = ['rektangel', 'tak', 'gavl', 'trapp', 'vinkel'];
+const toolIds = ['rektangel', 'inndeling', 'gavl', 'tak', 'trapp', 'vinkel'];
 function route(){
   const h = location.hash.replace('#', '');
   const id = toolIds.includes(h) ? h : 'rektangel';
@@ -802,10 +1266,17 @@ function route(){
 }
 window.addEventListener('hashchange', route);
 
+buildWindowFields();
+restore();
 document.querySelectorAll('.tool[data-mode]').forEach(applyMode);
 syncAngles('v-deg');
-updateRect(); updateRoof(); updateGable(); updateStair();
+updateRect(); updateDivision(); updateRoof(); updateGable(); updateStair();
 route();
+
+// Offline use when installed from the published site
+if ('serviceWorker' in navigator && location.protocol === 'https:' && !/claude\.ai|claudeusercontent/.test(location.hostname)){
+  navigator.serviceWorker.register('sw.js').catch(function(){});
+}
 })();
 </script>
 
