@@ -379,6 +379,14 @@ body{margin:0}
     </div>
     <div class="results" id="t-out" aria-live="polite"></div>
     <figure class="figure" id="t-fig" hidden><div id="t-svg"></div><figcaption>Snitt gjennom huset. Stiplet linje viser stigningen fra underkant takstol til møne.</figcaption></figure>
+    <details class="more" id="t-sbox" hidden>
+      <summary>Sperre og fuglekjeft</summary>
+      <div class="fields">
+        <div class="field"><label for="t-sh">Sperrehøyde</label><div class="box"><input id="t-sh" type="text" inputmode="decimal" autocomplete="off" value="198"><span class="suffix">mm</span></div></div>
+        <div class="field"><label for="t-seat">Opplegg på vegg</label><div class="box"><input id="t-seat" type="text" inputmode="decimal" autocomplete="off" value="98"><span class="suffix">mm</span></div><p class="help">Lengden på vaterkuttet i fuglekjeften.</p></div>
+      </div>
+      <div class="results" id="t-sout" aria-live="polite"></div>
+    </details>
   </section>
 
   <!-- PRECUT WALL -->
@@ -521,6 +529,20 @@ body{margin:0}
       <div class="alts" id="s-alts"></div>
     </div>
     <button type="button" class="btn" id="s-copy" hidden>Kopier tallene</button>
+    <details class="more" id="s-vbox" hidden>
+      <summary>Vange og merking</summary>
+      <div class="fields">
+        <div class="field"><label for="s-tt">Trinntykkelse</label><div class="box"><input id="s-tt" type="text" inputmode="decimal" autocomplete="off" value="36"><span class="suffix">mm</span></div><p class="help">Kappes av nederst på vangen.</p></div>
+        <div class="field"><label for="s-vb">Vangebredde</label><div class="box"><input id="s-vb" type="text" inputmode="decimal" autocomplete="off" value="223"><span class="suffix">mm</span></div></div>
+      </div>
+      <div class="results" id="s-vout" aria-live="polite"></div>
+      <h3 class="sect">Merkemål langs vangen</h3>
+      <p class="help" style="margin:-4px 0 10px">Fra nederste trinnkant, målt langs vangekanten. Hvert merke er et hjørne der opptrinn og inntrinn møtes.</p>
+      <div class="table-wrap"><table>
+        <thead><tr><th>Trinn</th><th>Langs vangen mm</th><th>Høyde mm</th><th>Vannrett mm</th></tr></thead>
+        <tbody id="s-vrows"></tbody>
+      </table></div>
+    </details>
   </section>
 
   <!-- ANGLE -->
@@ -737,6 +759,21 @@ function calcWall(L, H, cc, t, svill, rem, opens, losU, losO){
   };
 }
 
+/* Rafter cuts. Plumb cut at the ridge and a birdsmouth with a given seat length. */
+function calcRafter(angleDeg, h, seat){
+  if (!(angleDeg > 0) || !(angleDeg < 85) || !(h > 0)) return null;
+  const a = rad(angleDeg);
+  const s = seat > 0 ? seat : 0;
+  const depth = s * Math.sin(a);           // notch depth measured square to the rafter
+  return {
+    ridgeEdge: 90 - angleDeg,              // angle between rafter edge and plumb cut
+    saw: angleDeg,                         // mitre saw setting from square
+    plumbH: h / Math.cos(a),               // length of the plumb cut across the rafter
+    seat: s, heelH: s * Math.tan(a), depth, left: h - depth,
+    tooDeep: depth > h / 3
+  };
+}
+
 /* Balusters between two posts with equal gaps on both ends. */
 function calcBalusters(L, w, maxGap, adj){
   if (!(L > 0) || !(w > 0) || !(maxGap > 0) || L <= w) return null;
@@ -757,6 +794,23 @@ function stairFrom(H, n, f, runGiven){
     angle: deg(Math.atan2(rise, tread)),
     pitch: (n - 1) * Math.hypot(rise, tread),
     sum: 2 * rise + tread
+  };
+}
+
+/* Sawn stringer: equal hypotenuse per step, cut angles and bottom drop for tread thickness. */
+function calcStringer(r, treadT, width){
+  if (!r || r.bad) return null;
+  const hyp = Math.hypot(r.rise, r.tread);
+  const a = Math.atan2(r.rise, r.tread);
+  const marks = [];
+  for (let i = 1; i <= r.n - 1; i++) marks.push({ i, along: i * hyp, h: i * r.rise, x: i * r.tread });
+  // Stock length: one hypotenuse per riser, plus the board width as allowance for the end cuts.
+  const stock = r.n * hyp + (width > 0 ? width : 0);
+  return {
+    hyp, angle: deg(a), seatCut: deg(a), plumbCut: 90 - deg(a),
+    drop: treadT > 0 ? treadT : 0, firstRise: r.rise - (treadT > 0 ? treadT : 0),
+    marks, stock,
+    throat: width > 0 ? width - r.rise * r.tread / hyp : null
   };
 }
 
@@ -908,7 +962,7 @@ function updateRoof(){
     const a = num('t-angle');
     if (B > 0 && a != null) r = calcRoofAngle(B, a, oh);
   }
-  if (!r){ fig.hidden = true; return setOut('t-out', null, null, msg); }
+  if (!r){ fig.hidden = true; $('t-sbox').hidden = true; return setOut('t-out', null, null, msg); }
   const rows = mode === 'A'
     ? [
         { label: 'Takvinkel', value: F1.format(r.angle), unit: '°', primary: true },
@@ -925,6 +979,23 @@ function updateRoof(){
   setOut('t-out', rows, [{ kind: 'info', text: 'Målt langs takflaten fra rafthøyde til møne.' }]);
   $('t-svg').innerHTML = roofSvg(B, mode === 'A' ? wall : null, r.rise, r.angle);
   fig.hidden = false;
+
+  const rf = calcRafter(r.angle, num('t-sh'), num('t-seat'));
+  $('t-sbox').hidden = false;
+  if (!rf) setOut('t-sout', null, null, 'Legg inn sperrehøyde.');
+  else {
+    const notes = [];
+    if (rf.tooDeep) notes.push({ kind: 'warn', text: 'Fuglekjeften tar mer enn en tredjedel av sperrehøyden. Bruk kortere opplegg eller høyere sperre.' });
+    notes.push({ kind: 'info', text: 'Loddsnitt i mønet og loddsnittet i fuglekjeften har samme vinkel. Lengden måles langs linja gjennom hjørnet av fuglekjeften.' });
+    setOut('t-sout', [
+      { label: 'Loddsnitt, vinkel mot sperrekant', value: F1.format(rf.ridgeEdge), unit: '°', sub: 'kappsag: ' + F1.format(rf.saw) + '° fra 90', primary: true },
+      { label: 'Loddsnittet er langt', value: F0.format(rf.plumbH), unit: 'mm', sub: 'tvers over sperra' },
+      { label: 'Fuglekjeft: vaterkutt', value: F0.format(rf.seat), unit: 'mm' },
+      { label: 'Fuglekjeft: loddkutt', value: F0.format(rf.heelH), unit: 'mm' },
+      { label: 'Sperre igjen over fuglekjeften', value: F0.format(rf.left), unit: 'mm', sub: 'målt vinkelrett på sperra' },
+      { label: 'Sperrelengde, møne til vegg', value: F0.format(r.len * 1000), unit: 'mm', sub: oh > 0 ? 'med overheng ' + F0.format(r.lenOh * 1000) + ' mm' : 'legg inn overheng over for full lengde' }
+    ], notes);
+  }
 }
 
 /* ---------- Gable studs ---------- */
@@ -1352,10 +1423,11 @@ function updateStair(){
     const L = num('s-run');
     if (H > 0 && L > 0 && f > 0) r = calcStairFromRun(H, L, f);
   }
-  if (!r){ copyBtn.hidden = true; $('s-alt').hidden = true; return setOut('s-out', null, null, 'Fyll inn alle feltene.'); }
+  if (!r){ copyBtn.hidden = true; $('s-alt').hidden = true; $('s-vbox').hidden = true; return setOut('s-out', null, null, 'Fyll inn alle feltene.'); }
   if (r.bad){
     copyBtn.hidden = true;
     $('s-alt').hidden = true;
+    $('s-vbox').hidden = true;
     return setOut('s-out', null, null, 'Formelen gir inntrinn på 0 mm eller mindre. Sjekk høyde og trappeformel.');
   }
   const rows = [
@@ -1363,7 +1435,7 @@ function updateStair(){
     { label: 'Opptrinn', value: F1.format(r.rise), unit: 'mm' },
     { label: 'Inntrinn', value: F1.format(r.tread), unit: 'mm' },
     { label: 'Antall inntrinn', value: F0.format(r.treads), unit: 'stk' },
-    { label: 'Lengde i løpet', value: F0.format(r.run), unit: 'mm', sub: F2.format(r.run / 1000) + ' m' },
+    { label: 'Lengde i løpet', value: F0.format(r.run), unit: 'mm', sub: 'fra øverste opptrinn til forkant nederste trinn' },
     { label: 'Trappevinkel', value: F1.format(r.angle), unit: '°' },
     { label: 'Lengde langs trinnkantene', value: F0.format(r.pitch), unit: 'mm', sub: 'Legg til for kapp i begge ender' },
     { label: '2 × opptrinn + inntrinn', value: F1.format(r.sum), unit: 'mm' }
@@ -1380,9 +1452,34 @@ function updateStair(){
   setOut('s-out', rows, notes);
   renderStairAlts(mode === 'A' ? H : null, r.n, f);
   copyBtn.hidden = false;
+  // Stringer
+  const sv = calcStringer(r, num('s-tt'), num('s-vb'));
+  $('s-vbox').hidden = !sv;
+  if (sv){
+    const vnotes = [{ kind: 'info', text: 'Vaterkutt nederst og loddkutt øverst. Vinklene er målt mot vangekanten.' }];
+    if (sv.throat != null && sv.throat < 90) vnotes.unshift({ kind: 'warn', text: 'Det blir bare ' + F0.format(sv.throat) + ' mm vange igjen under hakkene. Vurder bredere vange.' });
+    const vrows = [
+      { label: 'Merkemål per trinn', value: F1.format(sv.hyp), unit: 'mm', sub: 'langs vangekanten', primary: true },
+      { label: 'Vinkel vangekant mot vaterkutt', value: F1.format(sv.seatCut), unit: '°' },
+      { label: 'Vinkel vangekant mot loddkutt', value: F1.format(sv.plumbCut), unit: '°' },
+      { label: 'Kapp av nederst', value: F0.format(sv.drop), unit: 'mm', sub: 'første opptrinn på vangen ' + F1.format(sv.firstRise) + ' mm' },
+      { label: 'Emnelengde vange (ca.)', value: F0.format(sv.stock), unit: 'mm', sub: 'velg lengde over dette' }
+    ];
+    if (sv.throat != null) vrows.push({ label: 'Vange igjen under hakk', value: F0.format(sv.throat), unit: 'mm' });
+    setOut('s-vout', vrows, vnotes);
+    const tb = $('s-vrows');
+    tb.replaceChildren();
+    sv.marks.forEach(m => {
+      const tr = document.createElement('tr');
+      [F0.format(m.i), F1.format(m.along), F1.format(m.h), F1.format(m.x)].forEach(v => { const td = document.createElement('td'); td.textContent = v; tr.append(td); });
+      tb.append(tr);
+    });
+  }
+
   stairCopy = 'Trapp, høyde ' + F0.format(H) + ' mm\n' +
     r.n + ' trinn, opptrinn ' + F1.format(r.rise) + ' mm, inntrinn ' + F1.format(r.tread) + ' mm\n' +
-    'Lengde i løpet ' + F0.format(r.run) + ' mm, vinkel ' + F1.format(r.angle) + '°';
+    'Lengde i løpet ' + F0.format(r.run) + ' mm, vinkel ' + F1.format(r.angle) + '°' +
+    (sv ? '\nVange: merke hver ' + F1.format(sv.hyp) + ' mm, kapp av ' + F0.format(sv.drop) + ' mm nederst\nMerker: ' + sv.marks.map(m => plain(m.along, 0)).join(', ') : '');
 }
 
 /* ---------- Angle converter ---------- */
