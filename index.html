@@ -437,7 +437,7 @@ body{margin:0}
       <input type="hidden" id="w-side" value="R">
       <p class="help" style="margin:-8px 0 12px">Strek på målet, kryss på den siden stenderen skal stå.</p>
       <div class="table-wrap"><table>
-        <thead><tr><th>Nr</th><th>Strek</th><th>Kryss</th><th>Stender</th></tr></thead>
+        <thead><tr><th>Nr</th><th>Strek mm</th><th>Kryss</th><th>Stender mm</th></tr></thead>
         <tbody id="w-rows"></tbody>
       </table></div>
       <button type="button" class="btn" id="w-copy">Kopier kappliste</button>
@@ -1270,10 +1270,10 @@ function updateWall(){
   w.studs.forEach((s, i) => {
     const tr = document.createElement('tr');
     const txt = s.kind === 'cut'
-      ? s.pieces.map(p => F0.format(p.len) + ' ' + p.kind).join(' · ')
+      ? s.pieces.map(p => F0.format(p.len) + ' ' + p.kind).join(' + ')
       : (s.kind === 'karm' ? 'karm ' : '') + F0.format(w.full);
     const line = right ? s.x : s.x + t;
-    [F0.format(i + 1), F0.format(line) + ' mm', right ? '→ X' : 'X ←', txt].forEach(v => {
+    [F0.format(i + 1), F0.format(line), right ? '→X' : 'X←', txt].forEach(v => {
       const td = document.createElement('td');
       td.textContent = v;
       tr.append(td);
